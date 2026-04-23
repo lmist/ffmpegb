@@ -2,6 +2,7 @@
   "name": "ffmpegb",
   "version": "1.0.0",
   "description": "ffmpeg.wasm CLI wrapper via headless browser",
+  "author": "opennexus <noreply@opennexus.xyz>",
   "module": "src/cli.ts",
   "type": "module",
   "scripts": {
