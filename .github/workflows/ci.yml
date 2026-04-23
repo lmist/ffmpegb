@@ -27,5 +27,5 @@ jobs:
         run: sudo npx playwright install-deps chromium
 
       - name: Run test suite
-        run: bun test
+        run: bun run test
         timeout-minutes: 10
