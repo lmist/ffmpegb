@@ -1,0 +1,21 @@
+{
+  "name": "ffmpegb",
+  "version": "1.0.0",
+  "description": "ffmpeg.wasm CLI wrapper via headless browser",
+  "module": "src/cli.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/cli.ts",
+    "build": "bun build --compile src/cli.ts --outfile ffmpegb",
+    "test": "bun run test/suite.ts"
+  },
+  "dependencies": {
+    "playwright-core": "1.59.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "bin": {
+    "ffmpegb": "./src/cli.ts"
+  }
+}
