@@ -1,6 +1,7 @@
 import { FfmpegClient } from "../src/client.js";
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
+import { $ } from "bun";
 
 const VIDEO = resolve(import.meta.dirname, "test_video.mp4");
 
@@ -87,7 +88,15 @@ await client.close();
 if (failed > 0) {
   console.error(`\n${failed} test(s) failed`);
   process.exit(1);
-} else {
-  console.log("\nAll tests passed!");
-  process.exit(0);
 }
+
+console.log("\nAll tests passed!");
+
+// Zip result assets
+const testDir = import.meta.dirname;
+const zipPath = resolve(testDir, "results.zip");
+console.log("Zipping result assets...");
+await $`cd ${testDir} && zip -r results.zip output.wav output.mp3 frames/`;
+console.log(`Created ${zipPath}`);
+
+process.exit(0);
