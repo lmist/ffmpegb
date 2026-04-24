@@ -30,6 +30,10 @@ jobs:
         run: bun run bench
         timeout-minutes: 5
 
+      - name: Run stability matrix
+        run: bun run stability
+        timeout-minutes: 10
+
       - name: Build standalone binary
         run: make build
 
@@ -52,3 +56,9 @@ jobs:
         with:
           name: benchmark-results
           path: scratch/bench/results.json
+
+      - name: Upload stability matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: stability-results
+          path: scratch/stability/results.json

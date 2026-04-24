@@ -2,7 +2,7 @@ BUN ?= bun
 BIN ?= ffmpegb
 ENTRY := src/cli.ts
 
-.PHONY: all build test bench verify clean
+.PHONY: all build test bench stability verify clean
 
 all: build
 
@@ -16,7 +16,10 @@ test:
 bench:
 	$(BUN) run bench
 
-verify: test bench build
+stability:
+	$(BUN) run stability
+
+verify: test bench stability build
 	mkdir -p scratch/standalone
 	cp $(BIN) scratch/standalone/$(BIN)
 	cd scratch/standalone && ./$(BIN) -y -i ../../test/test_video.mp4 -t 1 smoke.mp4
@@ -24,4 +27,4 @@ verify: test bench build
 
 clean:
 	rm -f $(BIN)
-	rm -rf scratch/standalone scratch/bench
+	rm -rf scratch/standalone scratch/bench scratch/stability

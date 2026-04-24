@@ -65,7 +65,7 @@ Produces a single `ffmpegb` executable. The compiled binary embeds the vendored 
 make verify
 ```
 
-Runs the test suite, benchmark proof, standalone build, and an isolated smoke test that copies only the binary into `scratch/standalone/` before transcoding a fixture.
+Runs the test suite, benchmark proof, stability matrix, standalone build, and an isolated smoke test that copies only the binary into `scratch/standalone/` before transcoding a fixture.
 
 ## Test suite
 
@@ -108,9 +108,39 @@ Recent local benchmark on an Apple Silicon Mac:
 
 Large local profile against a 1.3 GB MKV showed the BUNFS change reducing 60s transcode memory from roughly 1.41 GB RSS / 2.98 GB peak footprint to roughly 393 MB RSS / 341 MB peak footprint, with speed improving from about 0.586x to about 0.781x realtime. A 1000-frame JPEG extraction dropped from roughly 1.75 GB RSS / 2.99 GB peak footprint to roughly 347 MB RSS / 291 MB peak footprint.
 
+## Stability matrix
+
+```bash
+bun run stability
+```
+
+The stability matrix follows the same shape as FFmpeg's FATE approach: small generated fixtures, many command invocations, and machine-readable result artifacts. It uses only this repository's Bun/ffmpeg.wasm path.
+
+The current matrix generates MP4, MKV, WAV, and MP3 fixtures under `scratch/stability/fixtures/`, then runs 209 isolated direct-CLI cases covering:
+
+1. **Video transcodes** — MPEG4 MP4 output across source MP4, generated MP4, and generated MKV inputs
+2. **Video filters** — scale variants across multiple short durations
+3. **Container remuxes** — copy-mode MKV outputs
+4. **Audio extraction** — WAV and MP3 from video inputs
+5. **Audio resampling** — WAV and MP3 outputs across sample rates and channel counts
+6. **Frame extraction** — JPEG sequences from the committed source MP4
+
+Results are written to `scratch/stability/results.json` and uploaded by CI as `stability-results`.
+
+Recent local result:
+
+```json
+{
+  "total": 209,
+  "passed": 209,
+  "failed": 0,
+  "wallMs": 30141
+}
+```
+
 ## CI
 
-GitHub Actions runs the full test suite and benchmark proof on every push to `main`. The workflow installs Bun, runs the tests, uploads `test/results.zip`, runs `bun run bench`, and uploads `scratch/bench/results.json`.
+GitHub Actions runs the full test suite, benchmark proof, stability matrix, and standalone binary proof on every push to `main`. It uploads `test/results.zip`, `scratch/bench/results.json`, and `scratch/stability/results.json`.
 
 ## Authors
 

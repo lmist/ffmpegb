@@ -129,6 +129,13 @@ export class FfmpegClient {
    * Executes an ffmpeg command.
    */
   async exec(...args: string[]): Promise<ExecResult> {
+    return await this.execWithTimeout(-1, ...args);
+  }
+
+  /**
+   * Executes an ffmpeg command with a runtime timeout in milliseconds.
+   */
+  async execWithTimeout(timeout: number, ...args: string[]): Promise<ExecResult> {
     this.assertLoaded();
     const logs: ExecResult["logs"] = [];
     const cb = ({ type, message }: { type: string; message: string }) => {
@@ -137,7 +144,7 @@ export class FfmpegClient {
 
     this.ffmpeg.on("log", cb);
     try {
-      const exitCode = await this.ffmpeg.exec(args);
+      const exitCode = await this.ffmpeg.exec(args, timeout);
       return { exitCode, logs };
     } finally {
       this.ffmpeg.off("log", cb);
