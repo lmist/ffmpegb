@@ -1,4 +1,5 @@
 import { FFmpeg } from "../vendor/ffmpeg/index.js";
+import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname } from "node:path";
@@ -10,6 +11,16 @@ function getVendorDir(): string {
     return resolve(dirname(process.execPath), "vendor");
   }
   return resolve(__dirname, "../vendor");
+}
+
+function firstExisting(...paths: string[]): string {
+  const found = paths.find((path) => existsSync(path));
+  if (!found) throw new Error(`Missing ffmpeg.wasm artifact. Tried: ${paths.join(", ")}`);
+  return found;
+}
+
+function firstExistingOptional(...paths: string[]): string | undefined {
+  return paths.find((path) => existsSync(path));
 }
 
 export interface ExecResult {
@@ -31,15 +42,21 @@ export class FfmpegClient {
     if (this.loaded) return;
 
     const vendorDir = getVendorDir();
+    const coreDir = process.env.FFMPEGB_CORE_DIR || resolve(vendorDir, "core");
     const workerURL = pathToFileURL(resolve(vendorDir, "ffmpeg", "bun-worker.js")).href;
-    const coreURL = pathToFileURL(resolve(vendorDir, "core", "core.js")).href;
-    const wasmURL = pathToFileURL(resolve(vendorDir, "core", "core.wasm")).href;
+    const coreURL = pathToFileURL(firstExisting(resolve(coreDir, "core.js"), resolve(coreDir, "ffmpeg-core.js"))).href;
+    const wasmURL = pathToFileURL(firstExisting(resolve(coreDir, "core.wasm"), resolve(coreDir, "ffmpeg-core.wasm"))).href;
+    const coreWorkerPath = process.env.FFMPEGB_CORE_WORKER || firstExistingOptional(
+      resolve(coreDir, "core.worker.js"),
+      resolve(coreDir, "ffmpeg-core.worker.js")
+    );
 
     console.log("Loading ffmpeg.wasm core (~31 MB)...");
     await this.ffmpeg.load({
       classWorkerURL: workerURL,
       coreURL,
       wasmURL,
+      ...(coreWorkerPath ? { workerURL: pathToFileURL(coreWorkerPath).href } : {}),
     });
     this.loaded = true;
     console.log("ffmpeg.wasm core loaded.");
@@ -52,6 +69,36 @@ export class FfmpegClient {
     this.assertLoaded();
     const data = new Uint8Array(await Bun.file(localPath).arrayBuffer());
     await this.ffmpeg.writeFile(virtualPath, data);
+  }
+
+  /**
+   * Mounts a local host file read-only inside ffmpeg.wasm without copying it into MEMFS.
+   */
+  async mountFile(mountPoint: string, virtualName: string, localPath: string): Promise<string> {
+    this.assertLoaded();
+    await this.ffmpeg.createDir(mountPoint);
+    const file = Bun.file(localPath);
+    await this.ffmpeg.mount("BUNFS" as any, {
+      files: [{
+        name: virtualName,
+        path: localPath,
+        size: file.size,
+        lastModified: file.lastModified,
+      }],
+    }, mountPoint);
+    return `${mountPoint}/${virtualName}`;
+  }
+
+  /**
+   * Mounts a local host directory writable inside ffmpeg.wasm.
+   */
+  async mountDirectory(mountPoint: string, localPath: string, write = false): Promise<void> {
+    this.assertLoaded();
+    await this.ffmpeg.createDir(mountPoint);
+    await this.ffmpeg.mount("BUNFS" as any, {
+      rootPath: localPath,
+      write,
+    }, mountPoint);
   }
 
   /**

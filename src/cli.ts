@@ -107,8 +107,9 @@ const OPTIONS_WITHOUT_VALUES = new Set([
 
 interface DirectCommandPlan {
   args: string[];
-  inputs: Array<{ virtualPath: string; localPath: string }>;
-  outputs: Array<{ virtualPath: string; localPath: string; pattern: boolean }>;
+  inputs: Array<{ virtualPath: string; mountPoint: string; virtualName: string; localPath: string }>;
+  outputs: Array<{ virtualPath: string; mountPoint: string; virtualName: string; localDir: string; localPath: string; pattern: boolean; argIndex: number }>;
+  autoFastTranscode: boolean;
 }
 
 function isProtocolPath(path: string): boolean {
@@ -129,29 +130,64 @@ function makeVirtualInputPath(localPath: string, index: number): string {
   return `${name}_${index}${ext}`;
 }
 
+function makeInputMountPoint(index: number): string {
+  return `/input_${index}`;
+}
+
 function makeVirtualOutputPath(localPath: string, index: number): string {
   const base = basename(localPath).replace(/[^a-zA-Z0-9.%_-]/g, "_") || `output_${index}`;
   return base;
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function patternToRegExp(pattern: string): RegExp {
-  const token = "__FFMPEGB_NUMBER__";
-  const escaped = escapeRegExp(pattern).replace(/%0?\d*d/g, token);
-  return new RegExp(`^${escaped.replaceAll(token, "\\d+")}$`);
+function makeOutputMountPoint(index: number): string {
+  return `/output_${index}`;
 }
 
 function shouldPrintLog(message: string): boolean {
   return message !== "Aborted()";
 }
 
+function formatBytes(bytes: number): string {
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit++;
+  }
+  return `${value.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
+}
+
 function optionTakesValue(arg: string): boolean {
   if (!arg.startsWith("-") || arg === "-") return false;
   if (arg.includes("=")) return false;
   return !OPTIONS_WITHOUT_VALUES.has(arg);
+}
+
+function hasExplicitProcessingOptions(args: string[]): boolean {
+  return args.some((arg) =>
+    arg === "-c" ||
+    arg === "-codec" ||
+    (arg.startsWith("-") && arg.endsWith("codec")) ||
+    arg.startsWith("-c:") ||
+    arg.startsWith("-codec:") ||
+    arg.startsWith("-filter") ||
+    arg === "-vf" ||
+    arg === "-af" ||
+    arg === "-map" ||
+    arg === "-b" ||
+    arg.startsWith("-b:") ||
+    arg === "-crf" ||
+    arg === "-preset"
+  );
+}
+
+function canAutoFastTranscode(rawArgs: string[], inputs: DirectCommandPlan["inputs"], outputs: DirectCommandPlan["outputs"]): boolean {
+  if (inputs.length !== 1 || outputs.length !== 1) return false;
+  if (outputs[0]!.pattern) return false;
+  if (hasExplicitProcessingOptions(rawArgs)) return false;
+  return extname(inputs[0]!.localPath).toLowerCase() === ".mkv" &&
+    extname(outputs[0]!.localPath).toLowerCase() === ".mp4";
 }
 
 async function planDirectCommand(rawArgs: string[]): Promise<DirectCommandPlan> {
@@ -166,8 +202,11 @@ async function planDirectCommand(rawArgs: string[]): Promise<DirectCommandPlan> 
     if (arg === "-i") {
       const inputPath = args[i + 1];
       if (inputPath && isLocalPathCandidate(inputPath) && await localFileExists(inputPath)) {
-        const virtualPath = makeVirtualInputPath(inputPath, inputs.length + 1);
-        inputs.push({ virtualPath, localPath: inputPath });
+        const inputIndex = inputs.length + 1;
+        const virtualName = makeVirtualInputPath(inputPath, inputIndex);
+        const mountPoint = makeInputMountPoint(inputIndex);
+        const virtualPath = `${mountPoint}/${virtualName}`;
+        inputs.push({ virtualPath, mountPoint, virtualName, localPath: inputPath });
         args[i + 1] = virtualPath;
       }
       i++;
@@ -187,23 +226,48 @@ async function planDirectCommand(rawArgs: string[]): Promise<DirectCommandPlan> 
 
     if (!isLocalPathCandidate(arg)) continue;
 
-    const virtualPath = makeVirtualOutputPath(arg, outputs.length + 1);
+    const outputIndex = outputs.length + 1;
+    const virtualName = makeVirtualOutputPath(arg, outputIndex);
+    const mountPoint = makeOutputMountPoint(outputIndex);
+    const virtualPath = `${mountPoint}/${virtualName}`;
     outputs.push({
       virtualPath,
+      mountPoint,
+      virtualName,
+      localDir: dirname(resolve(arg)),
       localPath: arg,
       pattern: virtualPath.includes("%"),
+      argIndex: i,
     });
     args[i] = virtualPath;
   }
 
-  return { args, inputs, outputs };
+  const autoFastTranscode = canAutoFastTranscode(rawArgs, inputs, outputs);
+  if (autoFastTranscode) {
+    args.splice(outputs[0]!.argIndex, 0, "-c:v", "mpeg4", "-q:v", "5", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-sn");
+  }
+
+  return { args, inputs, outputs, autoFastTranscode };
 }
 
 async function runDirectCommand(client: FfmpegClient, rawArgs: string[]): Promise<void> {
   const plan = await planDirectCommand(rawArgs);
+  if (plan.autoFastTranscode) {
+    console.error("Using fast wasm MP4 transcode profile: mpeg4 q=5 + AAC 160k. Add codec/filter options to override.");
+  }
+
+  const inputBytes = plan.inputs.reduce((sum, input) => sum + Bun.file(input.localPath).size, 0);
+  if (inputBytes > 512 * 1024 * 1024) {
+    console.error(`Large input: mounting ${formatBytes(inputBytes)} through disk-backed BUNFS to avoid MEMFS copies. Codec work still runs inside the wasm heap.`);
+  }
 
   for (const input of plan.inputs) {
-    await client.writeFile(input.virtualPath, input.localPath);
+    await client.mountFile(input.mountPoint, input.virtualName, input.localPath);
+  }
+
+  for (const output of plan.outputs) {
+    await mkdir(output.localDir, { recursive: true });
+    await client.mountDirectory(output.mountPoint, output.localDir, true);
   }
 
   const result = await client.exec(...plan.args);
@@ -211,25 +275,6 @@ async function runDirectCommand(client: FfmpegClient, rawArgs: string[]): Promis
     const write = l.type === "stderr" ? console.error : console.log;
     write(l.message);
   });
-
-  const files = await client.listDir("/");
-  for (const output of plan.outputs) {
-    await mkdir(dirname(resolve(output.localPath)), { recursive: true });
-
-    if (!output.pattern) {
-      await client.readFile(output.virtualPath, output.localPath);
-      continue;
-    }
-
-    const matcher = patternToRegExp(output.virtualPath);
-    const generated = files
-      .filter((f) => !f.isDir && matcher.test(f.name))
-      .map((f) => f.name)
-      .sort();
-    for (const virtualName of generated) {
-      await client.readFile(virtualName, resolve(dirname(output.localPath), virtualName));
-    }
-  }
 
   process.exitCode = result.exitCode;
 }

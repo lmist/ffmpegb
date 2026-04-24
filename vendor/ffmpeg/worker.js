@@ -3,7 +3,186 @@
 /// <reference lib="webworker" />
 import { CORE_URL, FFMessageType } from "./const.js";
 import { ERROR_UNKNOWN_MESSAGE_TYPE, ERROR_NOT_LOADED, ERROR_IMPORT_FAILURE, } from "./errors.js";
+import { closeSync, existsSync, mkdirSync, openSync, readSync, statSync, unlinkSync, writeSync } from "node:fs";
+import { dirname, join } from "node:path";
 let ffmpeg;
+const installBunFS = (core) => {
+    if (core.FS.filesystems.BUNFS)
+        return;
+    const FS = core.FS;
+    const BUNFS = {
+        DIR_MODE: 16895,
+        FILE_MODE: 33279,
+        mount(mount) {
+            const root = BUNFS.createNode(null, "/", BUNFS.DIR_MODE, 0);
+            root.hostPath = mount.opts.rootPath;
+            root.write = !!mount.opts.write;
+            if (root.hostPath)
+                mkdirSync(root.hostPath, { recursive: true });
+            const createdParents = {};
+            const ensureParent = (path) => {
+                const parts = path.split("/").filter(Boolean);
+                let parent = root;
+                for (let i = 0; i < parts.length - 1; i++) {
+                    const curr = parts.slice(0, i + 1).join("/");
+                    if (!createdParents[curr]) {
+                        createdParents[curr] = BUNFS.createNode(parent, parts[i], BUNFS.DIR_MODE, 0, {
+                            path: parent.hostPath ? join(parent.hostPath, parts[i]) : undefined,
+                            write: root.write,
+                        });
+                    }
+                    parent = createdParents[curr];
+                }
+                return parent;
+            };
+            const base = (path) => path.split("/").filter(Boolean).pop() || path;
+            for (const file of mount.opts.files || []) {
+                const stat = statSync(file.path);
+                BUNFS.createNode(ensureParent(file.name), base(file.name), BUNFS.FILE_MODE, 0, {
+                    path: file.path,
+                    size: file.size ?? stat.size,
+                    mtimeMs: file.lastModified ?? stat.mtimeMs,
+                    write: false,
+                });
+            }
+            return root;
+        },
+        createNode(parent, name, mode, dev, contents) {
+            const node = FS.createNode(parent, name, mode, dev);
+            node.mode = mode;
+            node.node_ops = BUNFS.node_ops;
+            node.stream_ops = BUNFS.stream_ops;
+            node.timestamp = contents?.mtimeMs || Date.now();
+            if (mode === BUNFS.FILE_MODE) {
+                node.size = contents.size || 0;
+                node.contents = contents;
+            }
+            else {
+                node.size = 4096;
+                node.contents = {};
+            }
+            node.hostPath = contents?.path || (parent?.hostPath ? join(parent.hostPath, name) : undefined);
+            node.write = !!(contents?.write || parent?.write);
+            if (parent)
+                parent.contents[name] = node;
+            return node;
+        },
+        node_ops: {
+            getattr(node) {
+                return {
+                    dev: 1,
+                    ino: node.id,
+                    mode: node.mode,
+                    nlink: 1,
+                    uid: 0,
+                    gid: 0,
+                    rdev: undefined,
+                    size: node.size,
+                    atime: new Date(node.timestamp),
+                    mtime: new Date(node.timestamp),
+                    ctime: new Date(node.timestamp),
+                    blksize: 4096,
+                    blocks: Math.ceil(node.size / 4096),
+                };
+            },
+            setattr(node, attr) {
+                if (attr.mode !== undefined)
+                    node.mode = attr.mode;
+                if (attr.timestamp !== undefined)
+                    node.timestamp = attr.timestamp;
+            },
+            lookup(parent, name) {
+                if (!parent.hostPath)
+                    throw new FS.ErrnoError(44);
+                const path = join(parent.hostPath, name);
+                if (!existsSync(path))
+                    throw new FS.ErrnoError(44);
+                const stat = statSync(path);
+                return BUNFS.createNode(parent, name, stat.isDirectory() ? BUNFS.DIR_MODE : BUNFS.FILE_MODE, 0, {
+                    path,
+                    size: stat.isDirectory() ? 4096 : stat.size,
+                    mtimeMs: stat.mtimeMs,
+                    write: parent.write,
+                });
+            },
+            mknod(parent, name, mode, dev) {
+                if (!parent.write || !parent.hostPath)
+                    throw new FS.ErrnoError(63);
+                const path = join(parent.hostPath, name);
+                mkdirSync(dirname(path), { recursive: true });
+                return BUNFS.createNode(parent, name, mode, dev, {
+                    path,
+                    size: 0,
+                    write: true,
+                });
+            },
+            rename() { throw new FS.ErrnoError(63); },
+            unlink(parent, name) {
+                if (!parent.write || !parent.hostPath)
+                    throw new FS.ErrnoError(63);
+                const node = parent.contents[name];
+                const path = node?.hostPath || join(parent.hostPath, name);
+                if (existsSync(path))
+                    unlinkSync(path);
+                delete parent.contents[name];
+            },
+            rmdir() { throw new FS.ErrnoError(63); },
+            readdir(node) {
+                return [".", "..", ...Object.keys(node.contents)];
+            },
+            symlink() { throw new FS.ErrnoError(63); },
+        },
+        stream_ops: {
+            open(stream) {
+                if (stream.node.write) {
+                    mkdirSync(dirname(stream.node.hostPath), { recursive: true });
+                    stream.bunfd = openSync(stream.node.hostPath, "w+");
+                }
+                else {
+                    stream.bunfd = openSync(stream.node.contents.path, "r");
+                }
+            },
+            close(stream) {
+                if (stream.bunfd !== undefined) {
+                    closeSync(stream.bunfd);
+                    stream.bunfd = undefined;
+                }
+            },
+            read(stream, buffer, offset, length, position) {
+                if (position >= stream.node.size)
+                    return 0;
+                if (stream.bunfd === undefined)
+                    stream.bunfd = openSync(stream.node.contents.path, "r");
+                const bytesToRead = Math.min(length, stream.node.size - position);
+                const target = new Uint8Array(buffer.buffer, buffer.byteOffset + offset, bytesToRead);
+                return readSync(stream.bunfd, target, 0, bytesToRead, position);
+            },
+            write(stream, buffer, offset, length, position) {
+                if (!stream.node.write)
+                    throw new FS.ErrnoError(29);
+                if (stream.bunfd === undefined) {
+                    mkdirSync(dirname(stream.node.hostPath), { recursive: true });
+                    stream.bunfd = openSync(stream.node.hostPath, "w+");
+                }
+                const source = new Uint8Array(buffer.buffer, buffer.byteOffset + offset, length);
+                const written = writeSync(stream.bunfd, source, 0, length, position);
+                stream.node.size = Math.max(stream.node.size, position + written);
+                return written;
+            },
+            llseek(stream, offset, whence) {
+                let position = offset;
+                if (whence === 1)
+                    position += stream.position;
+                else if (whence === 2)
+                    position += stream.node.size;
+                if (position < 0)
+                    throw new FS.ErrnoError(28);
+                return position;
+            },
+        },
+    };
+    core.FS.filesystems.BUNFS = BUNFS;
+};
 const load = async ({ coreURL: _coreURL, wasmURL: _wasmURL, workerURL: _workerURL, }) => {
     const first = !ffmpeg;
     try {
@@ -32,6 +211,7 @@ const load = async ({ coreURL: _coreURL, wasmURL: _wasmURL, workerURL: _workerUR
         // Encoded wasmURL and workerURL in the URL as a hack to fix locateFile issue.
         mainScriptUrlOrBlob: `${coreURL}#${btoa(JSON.stringify({ wasmURL, workerURL }))}`,
     });
+    installBunFS(ffmpeg);
     ffmpeg.setLogger((data) => self.postMessage({ type: FFMessageType.LOG, data }));
     ffmpeg.setProgress((data) => self.postMessage({
         type: FFMessageType.PROGRESS,
