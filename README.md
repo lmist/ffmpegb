@@ -127,6 +127,14 @@ The current matrix generates MP4, MKV, WAV, and MP3 fixtures under `scratch/stab
 
 Results are written to `scratch/stability/results.json` and uploaded by CI as `stability-results`.
 
+Console output streams the status, operation summary, and exact Bun/WASM command for each case:
+
+```text
+[001/209] PASS v1_mpeg4_source_mp4_0.25_3 130ms 31.4KB
+  scratch/stability/fixtures/source.mp4 -> scratch/stability/outputs/v1_mpeg4_source_mp4_0.25_3.mp4 | t=0.25s | codec=mpeg4 | q=3 | audio=off
+  $ bun run src/cli.ts -y -i scratch/stability/fixtures/source.mp4 -t 0.25 -an -c:v mpeg4 -q:v 3 -pix_fmt yuv420p scratch/stability/outputs/v1_mpeg4_source_mp4_0.25_3.mp4
+```
+
 The committed case manifest is [test/stability-matrix.json](test/stability-matrix.json), so the matrix is visible without generating scratch artifacts locally.
 
 Recent local result:
@@ -136,7 +144,7 @@ Recent local result:
   "total": 209,
   "passed": 209,
   "failed": 0,
-  "wallMs": 30141
+  "wallMs": 25670
 }
 ```
 

@@ -30,6 +30,61 @@ interface CaseResult {
   stderrTail: string;
 }
 
+function formatBytes(bytes: number): string {
+  const units = ["B", "KB", "MB", "GB"];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit++;
+  }
+  return `${value.toFixed(unit === 0 ? 0 : 1)}${units[unit]}`;
+}
+
+function displayPath(path: string): string {
+  return path.startsWith(root) ? path.slice(root.length + 1) : path;
+}
+
+function shellQuote(arg: string): string {
+  if (/^[a-zA-Z0-9_./:=@%+-]+$/.test(arg)) return displayPath(arg);
+  return `'${displayPath(arg).replaceAll("'", "'\\''")}'`;
+}
+
+function formatCommand(command: string[]): string {
+  return command.map(shellQuote).join(" ");
+}
+
+function optionValue(args: string[], option: string): string | undefined {
+  const index = args.indexOf(option);
+  return index >= 0 ? args[index + 1] : undefined;
+}
+
+function describeCase(testCase: CaseSpec): string {
+  const args = testCase.args;
+  const input = displayPath(optionValue(args, "-i") ?? "?");
+  const output = displayPath(testCase.outputPath);
+  const duration = optionValue(args, "-t");
+  const codec = optionValue(args, "-c:v") ?? optionValue(args, "-acodec") ?? optionValue(args, "-c") ?? "default";
+  const quality = optionValue(args, "-q:v") ?? optionValue(args, "-q:a");
+  const scale = optionValue(args, "-vf");
+  const rate = optionValue(args, "-ar");
+  const channels = optionValue(args, "-ac");
+  const frames = optionValue(args, "-frames:v");
+  const audio = args.includes("-an") ? "audio=off" : args.includes("-vn") ? "video=off" : "audio=on";
+  const pieces = [
+    `${input} -> ${output}`,
+    duration ? `t=${duration}s` : undefined,
+    frames ? `frames=${frames}` : undefined,
+    scale,
+    `codec=${codec}`,
+    quality ? `q=${quality}` : undefined,
+    rate ? `ar=${rate}` : undefined,
+    channels ? `ac=${channels}` : undefined,
+    audio,
+  ].filter(Boolean);
+  return pieces.join(" | ");
+}
+
 async function pathSize(path: string): Promise<number> {
   try {
     const info = await stat(path);
@@ -57,6 +112,14 @@ async function countGlob(dir: string, pattern: string): Promise<number> {
   return Array.from(new Bun.Glob(pattern).scanSync(dir)).length;
 }
 
+async function globSize(dir: string, pattern: string): Promise<number> {
+  let total = 0;
+  for (const entry of new Bun.Glob(pattern).scanSync(dir)) {
+    total += await pathSize(resolve(dir, entry));
+  }
+  return total;
+}
+
 async function runCase(testCase: CaseSpec, timeoutMs = 25000): Promise<CaseResult> {
   const started = performance.now();
   const proc = spawn({
@@ -79,8 +142,9 @@ async function runCase(testCase: CaseSpec, timeoutMs = 25000): Promise<CaseResul
     outputBytes = await pathSize(testCase.outputPath);
     outputCount = outputBytes > 0 ? 1 : 0;
   } else {
-    outputBytes = await pathSize(outputDir);
-    outputCount = await countGlob(outputDir, patternToGlob(testCase.outputPath));
+    const pattern = patternToGlob(testCase.outputPath);
+    outputBytes = await globSize(outputDir, pattern);
+    outputCount = await countGlob(outputDir, pattern);
   }
 
   const ok = exitCode === 0 &&
@@ -171,11 +235,18 @@ for (const input of ["audio.wav", "audio.mp3"]) {
 
 const started = performance.now();
 const results: CaseResult[] = [];
-for (const testCase of cases) {
+for (let i = 0; i < cases.length; i++) {
+  const testCase = cases[i]!;
   const result = await runCase(testCase);
   results.push(result);
+  const status = result.ok ? "PASS" : "FAIL";
+  const output = testCase.kind === "pattern"
+    ? `${result.outputCount}/${testCase.expectedCount} files ${formatBytes(result.outputBytes)}`
+    : formatBytes(result.outputBytes);
+  console.log(`[${String(i + 1).padStart(3, "0")}/${cases.length}] ${status} ${testCase.id} ${result.wallMs}ms ${output}`);
+  console.log(`  ${describeCase(testCase)}`);
+  console.log(`  $ ${formatCommand(result.command)}`);
   if (!result.ok) {
-    console.error(`FAIL ${result.id}`);
     console.error(result.stderrTail);
   }
 }
