@@ -54,10 +54,18 @@ Pass explicit codec, bitrate, map, preset, or filter options to override it.
 ## Build standalone binary
 
 ```bash
+make build
+# or
 bun run build
 ```
 
-Produces a single `ffmpegb` executable.
+Produces a single `ffmpegb` executable. The compiled binary embeds the vendored ffmpeg.wasm runtime and does not require a sibling `vendor/` directory at runtime.
+
+```bash
+make verify
+```
+
+Runs the test suite, benchmark proof, standalone build, and an isolated smoke test that copies only the binary into `scratch/standalone/` before transcoding a fixture.
 
 ## Test suite
 

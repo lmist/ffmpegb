@@ -8,3 +8,5 @@ test/direct.wav
 test/direct_frames/
 ffmpegb
 scratch/
+
+src/generated/vendor-assets.ts

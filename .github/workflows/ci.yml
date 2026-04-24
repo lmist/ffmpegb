@@ -30,6 +30,17 @@ jobs:
         run: bun run bench
         timeout-minutes: 5
 
+      - name: Build standalone binary
+        run: make build
+
+      - name: Verify standalone binary has embedded runtime
+        run: |
+          mkdir -p scratch/standalone
+          cp ffmpegb scratch/standalone/ffmpegb
+          cd scratch/standalone
+          ./ffmpegb -y -i ../../test/test_video.mp4 -t 1 smoke.mp4
+          test -s smoke.mp4
+
       - name: Upload result assets
         uses: actions/upload-artifact@v4
         with:

@@ -1,14 +1,15 @@
 import { FFmpeg } from "../vendor/ffmpeg/index.js";
 import { existsSync } from "node:fs";
+import { materializeEmbeddedVendor } from "./embedded-vendor.js";
 import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-function getVendorDir(): string {
+async function getVendorDir(): Promise<string> {
   if (__dirname.includes("$bunfs")) {
-    return resolve(dirname(process.execPath), "vendor");
+    return await materializeEmbeddedVendor();
   }
   return resolve(__dirname, "../vendor");
 }
@@ -41,7 +42,7 @@ export class FfmpegClient {
   async launch(): Promise<void> {
     if (this.loaded) return;
 
-    const vendorDir = getVendorDir();
+    const vendorDir = await getVendorDir();
     const coreDir = process.env.FFMPEGB_CORE_DIR || resolve(vendorDir, "core");
     const workerURL = pathToFileURL(resolve(vendorDir, "ffmpeg", "bun-worker.js")).href;
     const coreURL = pathToFileURL(firstExisting(resolve(coreDir, "core.js"), resolve(coreDir, "ffmpeg-core.js"))).href;
