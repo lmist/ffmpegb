@@ -127,6 +127,8 @@ The current matrix generates MP4, MKV, WAV, and MP3 fixtures under `scratch/stab
 
 Results are written to `scratch/stability/results.json` and uploaded by CI as `stability-results`.
 
+The committed case manifest is [test/stability-matrix.json](test/stability-matrix.json), so the matrix is visible without generating scratch artifacts locally.
+
 Recent local result:
 
 ```json
