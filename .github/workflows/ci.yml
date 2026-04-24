@@ -26,8 +26,18 @@ jobs:
         run: bun run test
         timeout-minutes: 10
 
+      - name: Run benchmark proof
+        run: bun run bench
+        timeout-minutes: 5
+
       - name: Upload result assets
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: test/results.zip
+
+      - name: Upload benchmark proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: scratch/bench/results.json

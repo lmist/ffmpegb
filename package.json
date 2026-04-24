@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "bun run src/cli.ts",
     "build": "bun build --compile src/cli.ts --outfile ffmpegb",
+    "bench": "bun run scripts/bench.ts",
     "test": "bun run test/suite.test.ts"
   },
   "dependencies": {},
