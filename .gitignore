@@ -4,4 +4,6 @@ node_modules/
 test/output.wav
 test/output.mp3
 test/frames/
+test/direct.wav
+test/direct_frames/
 ffmpegb

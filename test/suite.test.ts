@@ -1,5 +1,5 @@
 import { FfmpegClient } from "../src/client.js";
-import { mkdir } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { $ } from "bun";
 
@@ -84,6 +84,33 @@ let failed = 0;
 }
 
 await client.close();
+
+// Test 4: Direct ffmpeg-style CLI
+{
+  console.log("=== TEST 4: Direct CLI ===");
+  const directWav = resolve(import.meta.dirname, "direct.wav");
+  const directFrames = resolve(import.meta.dirname, "direct_frames");
+  await rm(directWav, { force: true });
+  await rm(directFrames, { recursive: true, force: true });
+  await mkdir(directFrames, { recursive: true });
+
+  await $`bun run ${resolve(import.meta.dirname, "../src/cli.ts")} -i ${VIDEO} -vn -acodec pcm_s16le -ar 44100 -ac 2 ${directWav}`;
+  if (await Bun.file(directWav).exists()) {
+    console.log("PASS: Direct CLI extracted WAV");
+  } else {
+    console.error("FAIL: Direct CLI did not write WAV");
+    failed++;
+  }
+
+  await $`bun run ${resolve(import.meta.dirname, "../src/cli.ts")} -i ${VIDEO} -an -frames:v 3 ${resolve(directFrames, "frame_%03d.jpg")}`;
+  const directFrameFiles = Array.from(new Bun.Glob("frame_*.jpg").scanSync(directFrames));
+  if (directFrameFiles.length === 3) {
+    console.log("PASS: Direct CLI extracted frame sequence");
+  } else {
+    console.error(`FAIL: Direct CLI expected 3 frames, got ${directFrameFiles.length}`);
+    failed++;
+  }
+}
 
 if (failed > 0) {
   console.error(`\n${failed} test(s) failed`);

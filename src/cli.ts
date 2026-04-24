@@ -1,28 +1,32 @@
 #!/usr/bin/env bun
 import { FfmpegClient } from "./client.js";
 import { mkdir } from "node:fs/promises";
+import { basename, dirname, extname, resolve } from "node:path";
 
 /**
  * Prints usage information.
  */
 function printUsage() {
   console.log(`
-ffmpegb - ffmpeg.wasm CLI wrapper via headless browser
+ffmpegb - ffmpeg.wasm CLI wrapper powered by Bun workers
 
 Usage:
-  ffmpegb <input> [options]
+  ffmpegb [ffmpeg args...]
 
 Commands:
+  ffmpegb -i <input> <output>               Run ffmpeg-style commands directly
   ffmpegb duration <input>                  Print video duration in seconds
   ffmpegb audio <input>                     Extract audio to <input>.wav and <input>.mp3
   ffmpegb frames <input> [--count=N]        Extract frames as JPEGs to <input>_frames/
-  ffmpegb run <input> -- <ffmpeg args>      Run arbitrary ffmpeg command
+  ffmpegb run <input> -- <ffmpeg args>      Legacy arbitrary command wrapper
 
 Options:
   --count=N      Number of frames to extract (default: 100)
   --help         Show this help message
 
 Examples:
+  ffmpegb -i video.mp4 audio.wav
+  ffmpegb -i video.mp4 -vf scale=320:240 output.mp4
   ffmpegb duration video.mp4
   ffmpegb audio video.mp4
   ffmpegb frames video.mp4 --count=100
@@ -86,13 +90,159 @@ function extractDuration(logs: Array<{ type: string; message: string }>): number
   return null;
 }
 
+const LEGACY_COMMANDS = new Set(["duration", "audio", "frames", "run"]);
+const OPTIONS_WITHOUT_VALUES = new Set([
+  "-an",
+  "-dn",
+  "-hide_banner",
+  "-nostats",
+  "-nostdin",
+  "-n",
+  "-shortest",
+  "-sn",
+  "-stats",
+  "-vn",
+  "-y",
+]);
+
+interface DirectCommandPlan {
+  args: string[];
+  inputs: Array<{ virtualPath: string; localPath: string }>;
+  outputs: Array<{ virtualPath: string; localPath: string; pattern: boolean }>;
+}
+
+function isProtocolPath(path: string): boolean {
+  return /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(path);
+}
+
+function isLocalPathCandidate(path: string): boolean {
+  return path !== "-" && !isProtocolPath(path);
+}
+
+async function localFileExists(path: string): Promise<boolean> {
+  return await Bun.file(path).exists();
+}
+
+function makeVirtualInputPath(localPath: string, index: number): string {
+  const ext = extname(localPath);
+  const name = basename(localPath, ext).replace(/[^a-zA-Z0-9._-]/g, "_") || "input";
+  return `${name}_${index}${ext}`;
+}
+
+function makeVirtualOutputPath(localPath: string, index: number): string {
+  const base = basename(localPath).replace(/[^a-zA-Z0-9.%_-]/g, "_") || `output_${index}`;
+  return base;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function patternToRegExp(pattern: string): RegExp {
+  const token = "__FFMPEGB_NUMBER__";
+  const escaped = escapeRegExp(pattern).replace(/%0?\d*d/g, token);
+  return new RegExp(`^${escaped.replaceAll(token, "\\d+")}$`);
+}
+
+function shouldPrintLog(message: string): boolean {
+  return message !== "Aborted()";
+}
+
+function optionTakesValue(arg: string): boolean {
+  if (!arg.startsWith("-") || arg === "-") return false;
+  if (arg.includes("=")) return false;
+  return !OPTIONS_WITHOUT_VALUES.has(arg);
+}
+
+async function planDirectCommand(rawArgs: string[]): Promise<DirectCommandPlan> {
+  const args = [...rawArgs];
+  const inputs: DirectCommandPlan["inputs"] = [];
+  const outputs: DirectCommandPlan["outputs"] = [];
+  let expectingOptionValue = false;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+
+    if (arg === "-i") {
+      const inputPath = args[i + 1];
+      if (inputPath && isLocalPathCandidate(inputPath) && await localFileExists(inputPath)) {
+        const virtualPath = makeVirtualInputPath(inputPath, inputs.length + 1);
+        inputs.push({ virtualPath, localPath: inputPath });
+        args[i + 1] = virtualPath;
+      }
+      i++;
+      expectingOptionValue = false;
+      continue;
+    }
+
+    if (expectingOptionValue) {
+      expectingOptionValue = false;
+      continue;
+    }
+
+    if (arg.startsWith("-") && arg !== "-") {
+      expectingOptionValue = optionTakesValue(arg);
+      continue;
+    }
+
+    if (!isLocalPathCandidate(arg)) continue;
+
+    const virtualPath = makeVirtualOutputPath(arg, outputs.length + 1);
+    outputs.push({
+      virtualPath,
+      localPath: arg,
+      pattern: virtualPath.includes("%"),
+    });
+    args[i] = virtualPath;
+  }
+
+  return { args, inputs, outputs };
+}
+
+async function runDirectCommand(client: FfmpegClient, rawArgs: string[]): Promise<void> {
+  const plan = await planDirectCommand(rawArgs);
+
+  for (const input of plan.inputs) {
+    await client.writeFile(input.virtualPath, input.localPath);
+  }
+
+  const result = await client.exec(...plan.args);
+  result.logs.filter((l) => shouldPrintLog(l.message)).forEach((l) => {
+    const write = l.type === "stderr" ? console.error : console.log;
+    write(l.message);
+  });
+
+  const files = await client.listDir("/");
+  for (const output of plan.outputs) {
+    await mkdir(dirname(resolve(output.localPath)), { recursive: true });
+
+    if (!output.pattern) {
+      await client.readFile(output.virtualPath, output.localPath);
+      continue;
+    }
+
+    const matcher = patternToRegExp(output.virtualPath);
+    const generated = files
+      .filter((f) => !f.isDir && matcher.test(f.name))
+      .map((f) => f.name)
+      .sort();
+    for (const virtualName of generated) {
+      await client.readFile(virtualName, resolve(dirname(output.localPath), virtualName));
+    }
+  }
+
+  process.exitCode = result.exitCode;
+}
+
 /**
  * Main entry point.
  */
 async function main() {
   const { command, input, flags, positional } = parseArgs(Bun.argv);
+  const directArgs = Bun.argv.slice(2);
+  const isLegacyCommand = LEGACY_COMMANDS.has(command);
 
-  if (!input && command !== "--help") {
+  if (isLegacyCommand && !input) {
     console.error("Error: missing input file");
     printUsage();
     process.exit(1);
@@ -102,7 +252,9 @@ async function main() {
   try {
     await client.launch();
 
-    if (command === "duration") {
+    if (!isLegacyCommand) {
+      await runDirectCommand(client, directArgs);
+    } else if (command === "duration") {
       console.log(`Analyzing ${input}...`);
       await client.writeFile("input", input!);
       const result = await client.exec("-i", "input");

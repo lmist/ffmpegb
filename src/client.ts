@@ -1,60 +1,15 @@
-import { chromium, Browser, Page } from "playwright-core";
-import { BROWSER_HTML } from "./browser-api.js";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { FFmpeg } from "../vendor/ffmpeg/index.js";
+import { resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { dirname } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const vendorDir = resolve(__dirname, "../vendor");
 
-/**
- * Encodes a Uint8Array to a base64 string.
- */
-function encodeBase64(data: Uint8Array): string {
-  let binary = "";
-  const len = data.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(data[i]);
+function getVendorDir(): string {
+  if (__dirname.includes("$bunfs")) {
+    return resolve(dirname(process.execPath), "vendor");
   }
-  return btoa(binary);
-}
-
-/**
- * Decodes a base64 string to a Uint8Array.
- */
-function decodeBase64(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const len = binary.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
-
-/**
- * Maps a requested URL path to a local vendor file path.
- */
-function mapUrlToPath(urlPath: string): string | null {
-  if (urlPath.startsWith("/ffmpeg/")) {
-    return resolve(vendorDir, "ffmpeg", urlPath.slice("/ffmpeg/".length));
-  }
-  if (urlPath.startsWith("/util/")) {
-    return resolve(vendorDir, "util", urlPath.slice("/util/".length));
-  }
-  if (urlPath.startsWith("/core/")) {
-    return resolve(vendorDir, "core", urlPath.slice("/core/".length));
-  }
-  return null;
-}
-
-/**
- * Determines the MIME type for a file based on its extension.
- */
-function getMimeType(path: string): string {
-  if (path.endsWith(".js")) return "text/javascript";
-  if (path.endsWith(".wasm")) return "application/wasm";
-  if (path.endsWith(".json")) return "application/json";
-  return "application/octet-stream";
+  return resolve(__dirname, "../vendor");
 }
 
 export interface ExecResult {
@@ -63,177 +18,112 @@ export interface ExecResult {
 }
 
 /**
- * Manages a headless browser instance running ffmpeg.wasm.
+ * Manages ffmpeg.wasm through Bun's Web Worker implementation.
  */
 export class FfmpegClient {
-  private browser?: Browser;
-  private page?: Page;
+  private ffmpeg = new FFmpeg();
   private loaded = false;
 
-  private server?: ReturnType<typeof Bun.serve>;
-
   /**
-   * Starts a local HTTP server to serve vendor files and the HTML page.
-   */
-  private startServer(): number {
-    const server = Bun.serve({
-      port: 0, // random available port
-      fetch: async (req) => {
-        const url = new URL(req.url);
-        const pathname = url.pathname;
-
-        if (pathname === "/") {
-          return new Response(BROWSER_HTML, {
-            headers: { "Content-Type": "text/html" },
-          });
-        }
-
-        const filePath = mapUrlToPath(pathname);
-        if (!filePath) {
-          return new Response("Not found", { status: 404 });
-        }
-
-        const file = Bun.file(filePath);
-        const exists = await file.exists();
-        if (!exists) {
-          return new Response("Not found: " + pathname, { status: 404 });
-        }
-
-        return new Response(file, {
-          headers: {
-            "Content-Type": getMimeType(filePath),
-            "Access-Control-Allow-Origin": "*",
-          },
-        });
-      },
-    });
-
-    this.server = server;
-    return server.port;
-  }
-
-  /**
-   * Launches the browser, injects the ffmpeg.wasm runtime, and loads the core.
+   * Starts the vendored ffmpeg.wasm runtime.
    */
   async launch(): Promise<void> {
-    const port = this.startServer();
-    const baseUrl = `http://localhost:${port}`;
+    if (this.loaded) return;
 
-    this.browser = await chromium.launch({ headless: true });
-    this.page = await this.browser.newPage();
-
-    this.page.on("console", (msg) => {
-      const text = msg.text();
-      if (text.includes("ffmpegb init error")) {
-        console.error("[Browser]", text);
-      }
-    });
-    this.page.on("pageerror", (err) => {
-      console.error("[Browser Page Error]", err.message);
-    });
-
-    // Navigate to the local server
-    await this.page.goto(baseUrl);
-
-    // Wait for the API to initialize or error out
-    await this.page.waitForFunction(
-      () => (window as any).__ffmpegbReady === true || (window as any).__ffmpegbError !== undefined,
-      { timeout: 60000 }
-    );
-    const initError = await this.page.evaluate(() => (window as any).__ffmpegbError);
-    if (initError) {
-      throw new Error("Browser init failed: " + initError);
-    }
+    const vendorDir = getVendorDir();
+    const workerURL = pathToFileURL(resolve(vendorDir, "ffmpeg", "bun-worker.js")).href;
+    const coreURL = pathToFileURL(resolve(vendorDir, "core", "core.js")).href;
+    const wasmURL = pathToFileURL(resolve(vendorDir, "core", "core.wasm")).href;
 
     console.log("Loading ffmpeg.wasm core (~31 MB)...");
-    await this.page.evaluate(() => (window as any).__ffmpegb.load());
+    await this.ffmpeg.load({
+      classWorkerURL: workerURL,
+      coreURL,
+      wasmURL,
+    });
     this.loaded = true;
     console.log("ffmpeg.wasm core loaded.");
   }
 
   /**
-   * Copies a local file into the browser's virtual filesystem.
+   * Copies a local file into ffmpeg.wasm's virtual filesystem.
    */
   async writeFile(virtualPath: string, localPath: string): Promise<void> {
-    if (!this.page) throw new Error("Client not launched");
-    const data = await Bun.file(localPath).arrayBuffer();
-    const base64 = encodeBase64(new Uint8Array(data));
-    await this.page.evaluate(
-      ({ path, base64 }: { path: string; base64: string }) =>
-        (window as any).__ffmpegb.writeFile(path, base64),
-      { path: virtualPath, base64 }
-    );
+    this.assertLoaded();
+    const data = new Uint8Array(await Bun.file(localPath).arrayBuffer());
+    await this.ffmpeg.writeFile(virtualPath, data);
   }
 
   /**
-   * Copies data from the browser's virtual filesystem to a local file.
+   * Copies data from ffmpeg.wasm's virtual filesystem to a local file.
    */
   async readFile(virtualPath: string, localPath: string): Promise<void> {
-    if (!this.page) throw new Error("Client not launched");
-    const base64: string = await this.page.evaluate(
-      (path: string) => (window as any).__ffmpegb.readFile(path),
-      virtualPath
-    );
-    await Bun.write(localPath, decodeBase64(base64));
+    this.assertLoaded();
+    const data = await this.ffmpeg.readFile(virtualPath);
+    if (typeof data === "string") {
+      await Bun.write(localPath, data);
+      return;
+    }
+    await Bun.write(localPath, data);
   }
 
   /**
-   * Reads a text file from the browser's virtual filesystem.
+   * Reads a text file from ffmpeg.wasm's virtual filesystem.
    */
   async readTextFile(virtualPath: string): Promise<string> {
-    if (!this.page) throw new Error("Client not launched");
-    return await this.page.evaluate(
-      (path: string) => (window as any).__ffmpegb.readFile(path, "utf8"),
-      virtualPath
-    );
+    this.assertLoaded();
+    const data = await this.ffmpeg.readFile(virtualPath, "utf8");
+    if (typeof data === "string") return data;
+    return new TextDecoder().decode(data);
   }
 
   /**
-   * Executes an ffmpeg command inside the browser.
+   * Executes an ffmpeg command.
    */
   async exec(...args: string[]): Promise<ExecResult> {
-    if (!this.page) throw new Error("Client not launched");
-    return await this.page.evaluate(
-      (cmdArgs: string[]) => (window as any).__ffmpegb.exec(cmdArgs),
-      args
-    );
+    this.assertLoaded();
+    const logs: ExecResult["logs"] = [];
+    const cb = ({ type, message }: { type: string; message: string }) => {
+      logs.push({ type, message });
+    };
+
+    this.ffmpeg.on("log", cb);
+    try {
+      const exitCode = await this.ffmpeg.exec(args);
+      return { exitCode, logs };
+    } finally {
+      this.ffmpeg.off("log", cb);
+    }
   }
 
   /**
-   * Lists a directory in the browser's virtual filesystem.
+   * Lists a directory in ffmpeg.wasm's virtual filesystem.
    */
   async listDir(path: string): Promise<Array<{ name: string; isDir: boolean }>> {
-    if (!this.page) throw new Error("Client not launched");
-    return await this.page.evaluate(
-      (dirPath: string) => (window as any).__ffmpegb.listDir(dirPath),
-      path
-    );
+    this.assertLoaded();
+    return await this.ffmpeg.listDir(path);
   }
 
   /**
-   * Deletes a file in the browser's virtual filesystem.
+   * Deletes a file in ffmpeg.wasm's virtual filesystem.
    */
   async deleteFile(path: string): Promise<void> {
-    if (!this.page) throw new Error("Client not launched");
-    await this.page.evaluate(
-      (filePath: string) => (window as any).__ffmpegb.deleteFile(filePath),
-      path
-    );
+    this.assertLoaded();
+    await this.ffmpeg.deleteFile(path);
   }
 
   /**
-   * Shuts down the browser and local server.
+   * Shuts down the worker.
    */
   async close(): Promise<void> {
-    if (this.browser) {
-      await this.browser.close();
-      this.browser = undefined;
-      this.page = undefined;
+    if (this.loaded) {
+      this.ffmpeg.terminate();
+      this.ffmpeg = new FFmpeg();
       this.loaded = false;
     }
-    if (this.server) {
-      this.server.stop();
-      this.server = undefined;
-    }
+  }
+
+  private assertLoaded(): void {
+    if (!this.loaded) throw new Error("Client not launched");
   }
 }
