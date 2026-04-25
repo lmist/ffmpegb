@@ -10,10 +10,10 @@
     "audioMp3": 14756
   },
   "summary": {
-    "total": 209,
-    "passed": 209,
+    "total": 217,
+    "passed": 217,
     "failed": 0,
-    "wallMs": 25670
+    "wallMs": 66016
   },
   "cases": [
     {
@@ -2348,7 +2348,203 @@
       ]
     },
     {
-      "id": "a114_wav_audio_wav_0.25_8000_1",
+      "id": "v114_complex_filter_map_source_mp4",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/source.mp4",
+        "-t",
+        "0.5",
+        "-filter_complex",
+        "[0:v]scale=128:96[v]",
+        "-map",
+        "[v]",
+        "-an",
+        "-c:v",
+        "mpeg4",
+        "-q:v",
+        "6",
+        "-f",
+        "mp4",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/v114_complex_filter_map_source_mp4.mp4"
+      ]
+    },
+    {
+      "id": "v115_seek_map_format_source_mp4",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-ss",
+        "0.25",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/source.mp4",
+        "-t",
+        "0.5",
+        "-map",
+        "0:v:0",
+        "-an",
+        "-c:v",
+        "mpeg4",
+        "-q:v",
+        "5",
+        "-pix_fmt",
+        "yuv420p",
+        "-f",
+        "mp4",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/v115_seek_map_format_source_mp4.mp4"
+      ]
+    },
+    {
+      "id": "v116_mapped_audio_wav_source_mp4",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/source.mp4",
+        "-t",
+        "0.5",
+        "-map",
+        "0:a:0",
+        "-vn",
+        "-acodec",
+        "pcm_s16le",
+        "-ar",
+        "22050",
+        "-ac",
+        "1",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/v116_mapped_audio_wav_source_mp4.wav"
+      ]
+    },
+    {
+      "id": "v117_metadata_mp4_source_mp4",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/source.mp4",
+        "-t",
+        "0.5",
+        "-an",
+        "-metadata",
+        "title=ffmpegb stability",
+        "-c:v",
+        "mpeg4",
+        "-q:v",
+        "6",
+        "-pix_fmt",
+        "yuv420p",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/v117_metadata_mp4_source_mp4.mp4"
+      ]
+    },
+    {
+      "id": "v118_complex_filter_map_short_mkv",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/short.mkv",
+        "-t",
+        "0.5",
+        "-filter_complex",
+        "[0:v]scale=128:96[v]",
+        "-map",
+        "[v]",
+        "-an",
+        "-c:v",
+        "mpeg4",
+        "-q:v",
+        "6",
+        "-f",
+        "mp4",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/v118_complex_filter_map_short_mkv.mp4"
+      ]
+    },
+    {
+      "id": "v119_seek_map_format_short_mkv",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-ss",
+        "0.25",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/short.mkv",
+        "-t",
+        "0.5",
+        "-map",
+        "0:v:0",
+        "-an",
+        "-c:v",
+        "mpeg4",
+        "-q:v",
+        "5",
+        "-pix_fmt",
+        "yuv420p",
+        "-f",
+        "mp4",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/v119_seek_map_format_short_mkv.mp4"
+      ]
+    },
+    {
+      "id": "v120_mapped_audio_wav_short_mkv",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/short.mkv",
+        "-t",
+        "0.5",
+        "-map",
+        "0:a:0",
+        "-vn",
+        "-acodec",
+        "pcm_s16le",
+        "-ar",
+        "22050",
+        "-ac",
+        "1",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/v120_mapped_audio_wav_short_mkv.wav"
+      ]
+    },
+    {
+      "id": "v121_metadata_mp4_short_mkv",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/short.mkv",
+        "-t",
+        "0.5",
+        "-an",
+        "-metadata",
+        "title=ffmpegb stability",
+        "-c:v",
+        "mpeg4",
+        "-q:v",
+        "6",
+        "-pix_fmt",
+        "yuv420p",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/v121_metadata_mp4_short_mkv.mp4"
+      ]
+    },
+    {
+      "id": "a122_wav_audio_wav_0.25_8000_1",
       "command": [
         "bun",
         "run",
@@ -2365,11 +2561,11 @@
         "8000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a114_wav_audio_wav_0.25_8000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a122_wav_audio_wav_0.25_8000_1.wav"
       ]
     },
     {
-      "id": "a115_mp3_audio_wav_0.25_8000_1",
+      "id": "a123_mp3_audio_wav_0.25_8000_1",
       "command": [
         "bun",
         "run",
@@ -2388,11 +2584,11 @@
         "8000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a115_mp3_audio_wav_0.25_8000_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a123_mp3_audio_wav_0.25_8000_1.mp3"
       ]
     },
     {
-      "id": "a116_wav_audio_wav_0.25_8000_2",
+      "id": "a124_wav_audio_wav_0.25_8000_2",
       "command": [
         "bun",
         "run",
@@ -2409,11 +2605,11 @@
         "8000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a116_wav_audio_wav_0.25_8000_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a124_wav_audio_wav_0.25_8000_2.wav"
       ]
     },
     {
-      "id": "a117_mp3_audio_wav_0.25_8000_2",
+      "id": "a125_mp3_audio_wav_0.25_8000_2",
       "command": [
         "bun",
         "run",
@@ -2432,11 +2628,11 @@
         "8000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a117_mp3_audio_wav_0.25_8000_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a125_mp3_audio_wav_0.25_8000_2.mp3"
       ]
     },
     {
-      "id": "a118_wav_audio_wav_0.25_16000_1",
+      "id": "a126_wav_audio_wav_0.25_16000_1",
       "command": [
         "bun",
         "run",
@@ -2453,55 +2649,11 @@
         "16000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a118_wav_audio_wav_0.25_16000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a126_wav_audio_wav_0.25_16000_1.wav"
       ]
     },
     {
-      "id": "a119_mp3_audio_wav_0.25_16000_1",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
-        "-t",
-        "0.25",
-        "-vn",
-        "-acodec",
-        "libmp3lame",
-        "-q:a",
-        "6",
-        "-ar",
-        "16000",
-        "-ac",
-        "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a119_mp3_audio_wav_0.25_16000_1.mp3"
-      ]
-    },
-    {
-      "id": "a120_wav_audio_wav_0.25_16000_2",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
-        "-t",
-        "0.25",
-        "-vn",
-        "-acodec",
-        "pcm_s16le",
-        "-ar",
-        "16000",
-        "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a120_wav_audio_wav_0.25_16000_2.wav"
-      ]
-    },
-    {
-      "id": "a121_mp3_audio_wav_0.25_16000_2",
+      "id": "a127_mp3_audio_wav_0.25_16000_1",
       "command": [
         "bun",
         "run",
@@ -2519,12 +2671,56 @@
         "-ar",
         "16000",
         "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a121_mp3_audio_wav_0.25_16000_2.mp3"
+        "1",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a127_mp3_audio_wav_0.25_16000_1.mp3"
       ]
     },
     {
-      "id": "a122_wav_audio_wav_0.25_44100_1",
+      "id": "a128_wav_audio_wav_0.25_16000_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
+        "-t",
+        "0.25",
+        "-vn",
+        "-acodec",
+        "pcm_s16le",
+        "-ar",
+        "16000",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a128_wav_audio_wav_0.25_16000_2.wav"
+      ]
+    },
+    {
+      "id": "a129_mp3_audio_wav_0.25_16000_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
+        "-t",
+        "0.25",
+        "-vn",
+        "-acodec",
+        "libmp3lame",
+        "-q:a",
+        "6",
+        "-ar",
+        "16000",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a129_mp3_audio_wav_0.25_16000_2.mp3"
+      ]
+    },
+    {
+      "id": "a130_wav_audio_wav_0.25_44100_1",
       "command": [
         "bun",
         "run",
@@ -2541,11 +2737,11 @@
         "44100",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a122_wav_audio_wav_0.25_44100_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a130_wav_audio_wav_0.25_44100_1.wav"
       ]
     },
     {
-      "id": "a123_mp3_audio_wav_0.25_44100_1",
+      "id": "a131_mp3_audio_wav_0.25_44100_1",
       "command": [
         "bun",
         "run",
@@ -2564,11 +2760,11 @@
         "44100",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a123_mp3_audio_wav_0.25_44100_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a131_mp3_audio_wav_0.25_44100_1.mp3"
       ]
     },
     {
-      "id": "a124_wav_audio_wav_0.25_44100_2",
+      "id": "a132_wav_audio_wav_0.25_44100_2",
       "command": [
         "bun",
         "run",
@@ -2585,11 +2781,11 @@
         "44100",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a124_wav_audio_wav_0.25_44100_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a132_wav_audio_wav_0.25_44100_2.wav"
       ]
     },
     {
-      "id": "a125_mp3_audio_wav_0.25_44100_2",
+      "id": "a133_mp3_audio_wav_0.25_44100_2",
       "command": [
         "bun",
         "run",
@@ -2608,11 +2804,11 @@
         "44100",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a125_mp3_audio_wav_0.25_44100_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a133_mp3_audio_wav_0.25_44100_2.mp3"
       ]
     },
     {
-      "id": "a126_wav_audio_wav_0.5_8000_1",
+      "id": "a134_wav_audio_wav_0.5_8000_1",
       "command": [
         "bun",
         "run",
@@ -2629,55 +2825,11 @@
         "8000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a126_wav_audio_wav_0.5_8000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a134_wav_audio_wav_0.5_8000_1.wav"
       ]
     },
     {
-      "id": "a127_mp3_audio_wav_0.5_8000_1",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
-        "-t",
-        "0.5",
-        "-vn",
-        "-acodec",
-        "libmp3lame",
-        "-q:a",
-        "6",
-        "-ar",
-        "8000",
-        "-ac",
-        "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a127_mp3_audio_wav_0.5_8000_1.mp3"
-      ]
-    },
-    {
-      "id": "a128_wav_audio_wav_0.5_8000_2",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
-        "-t",
-        "0.5",
-        "-vn",
-        "-acodec",
-        "pcm_s16le",
-        "-ar",
-        "8000",
-        "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a128_wav_audio_wav_0.5_8000_2.wav"
-      ]
-    },
-    {
-      "id": "a129_mp3_audio_wav_0.5_8000_2",
+      "id": "a135_mp3_audio_wav_0.5_8000_1",
       "command": [
         "bun",
         "run",
@@ -2695,12 +2847,56 @@
         "-ar",
         "8000",
         "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a129_mp3_audio_wav_0.5_8000_2.mp3"
+        "1",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a135_mp3_audio_wav_0.5_8000_1.mp3"
       ]
     },
     {
-      "id": "a130_wav_audio_wav_0.5_16000_1",
+      "id": "a136_wav_audio_wav_0.5_8000_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
+        "-t",
+        "0.5",
+        "-vn",
+        "-acodec",
+        "pcm_s16le",
+        "-ar",
+        "8000",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a136_wav_audio_wav_0.5_8000_2.wav"
+      ]
+    },
+    {
+      "id": "a137_mp3_audio_wav_0.5_8000_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
+        "-t",
+        "0.5",
+        "-vn",
+        "-acodec",
+        "libmp3lame",
+        "-q:a",
+        "6",
+        "-ar",
+        "8000",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a137_mp3_audio_wav_0.5_8000_2.mp3"
+      ]
+    },
+    {
+      "id": "a138_wav_audio_wav_0.5_16000_1",
       "command": [
         "bun",
         "run",
@@ -2717,11 +2913,11 @@
         "16000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a130_wav_audio_wav_0.5_16000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a138_wav_audio_wav_0.5_16000_1.wav"
       ]
     },
     {
-      "id": "a131_mp3_audio_wav_0.5_16000_1",
+      "id": "a139_mp3_audio_wav_0.5_16000_1",
       "command": [
         "bun",
         "run",
@@ -2740,11 +2936,11 @@
         "16000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a131_mp3_audio_wav_0.5_16000_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a139_mp3_audio_wav_0.5_16000_1.mp3"
       ]
     },
     {
-      "id": "a132_wav_audio_wav_0.5_16000_2",
+      "id": "a140_wav_audio_wav_0.5_16000_2",
       "command": [
         "bun",
         "run",
@@ -2761,11 +2957,11 @@
         "16000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a132_wav_audio_wav_0.5_16000_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a140_wav_audio_wav_0.5_16000_2.wav"
       ]
     },
     {
-      "id": "a133_mp3_audio_wav_0.5_16000_2",
+      "id": "a141_mp3_audio_wav_0.5_16000_2",
       "command": [
         "bun",
         "run",
@@ -2784,11 +2980,11 @@
         "16000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a133_mp3_audio_wav_0.5_16000_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a141_mp3_audio_wav_0.5_16000_2.mp3"
       ]
     },
     {
-      "id": "a134_wav_audio_wav_0.5_44100_1",
+      "id": "a142_wav_audio_wav_0.5_44100_1",
       "command": [
         "bun",
         "run",
@@ -2805,55 +3001,11 @@
         "44100",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a134_wav_audio_wav_0.5_44100_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a142_wav_audio_wav_0.5_44100_1.wav"
       ]
     },
     {
-      "id": "a135_mp3_audio_wav_0.5_44100_1",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
-        "-t",
-        "0.5",
-        "-vn",
-        "-acodec",
-        "libmp3lame",
-        "-q:a",
-        "6",
-        "-ar",
-        "44100",
-        "-ac",
-        "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a135_mp3_audio_wav_0.5_44100_1.mp3"
-      ]
-    },
-    {
-      "id": "a136_wav_audio_wav_0.5_44100_2",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
-        "-t",
-        "0.5",
-        "-vn",
-        "-acodec",
-        "pcm_s16le",
-        "-ar",
-        "44100",
-        "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a136_wav_audio_wav_0.5_44100_2.wav"
-      ]
-    },
-    {
-      "id": "a137_mp3_audio_wav_0.5_44100_2",
+      "id": "a143_mp3_audio_wav_0.5_44100_1",
       "command": [
         "bun",
         "run",
@@ -2871,12 +3023,56 @@
         "-ar",
         "44100",
         "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a137_mp3_audio_wav_0.5_44100_2.mp3"
+        "1",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a143_mp3_audio_wav_0.5_44100_1.mp3"
       ]
     },
     {
-      "id": "a138_wav_audio_wav_1_8000_1",
+      "id": "a144_wav_audio_wav_0.5_44100_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
+        "-t",
+        "0.5",
+        "-vn",
+        "-acodec",
+        "pcm_s16le",
+        "-ar",
+        "44100",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a144_wav_audio_wav_0.5_44100_2.wav"
+      ]
+    },
+    {
+      "id": "a145_mp3_audio_wav_0.5_44100_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
+        "-t",
+        "0.5",
+        "-vn",
+        "-acodec",
+        "libmp3lame",
+        "-q:a",
+        "6",
+        "-ar",
+        "44100",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a145_mp3_audio_wav_0.5_44100_2.mp3"
+      ]
+    },
+    {
+      "id": "a146_wav_audio_wav_1_8000_1",
       "command": [
         "bun",
         "run",
@@ -2893,11 +3089,11 @@
         "8000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a138_wav_audio_wav_1_8000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a146_wav_audio_wav_1_8000_1.wav"
       ]
     },
     {
-      "id": "a139_mp3_audio_wav_1_8000_1",
+      "id": "a147_mp3_audio_wav_1_8000_1",
       "command": [
         "bun",
         "run",
@@ -2916,11 +3112,11 @@
         "8000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a139_mp3_audio_wav_1_8000_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a147_mp3_audio_wav_1_8000_1.mp3"
       ]
     },
     {
-      "id": "a140_wav_audio_wav_1_8000_2",
+      "id": "a148_wav_audio_wav_1_8000_2",
       "command": [
         "bun",
         "run",
@@ -2937,11 +3133,11 @@
         "8000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a140_wav_audio_wav_1_8000_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a148_wav_audio_wav_1_8000_2.wav"
       ]
     },
     {
-      "id": "a141_mp3_audio_wav_1_8000_2",
+      "id": "a149_mp3_audio_wav_1_8000_2",
       "command": [
         "bun",
         "run",
@@ -2960,11 +3156,11 @@
         "8000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a141_mp3_audio_wav_1_8000_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a149_mp3_audio_wav_1_8000_2.mp3"
       ]
     },
     {
-      "id": "a142_wav_audio_wav_1_16000_1",
+      "id": "a150_wav_audio_wav_1_16000_1",
       "command": [
         "bun",
         "run",
@@ -2981,11 +3177,11 @@
         "16000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a142_wav_audio_wav_1_16000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a150_wav_audio_wav_1_16000_1.wav"
       ]
     },
     {
-      "id": "a143_mp3_audio_wav_1_16000_1",
+      "id": "a151_mp3_audio_wav_1_16000_1",
       "command": [
         "bun",
         "run",
@@ -3004,11 +3200,11 @@
         "16000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a143_mp3_audio_wav_1_16000_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a151_mp3_audio_wav_1_16000_1.mp3"
       ]
     },
     {
-      "id": "a144_wav_audio_wav_1_16000_2",
+      "id": "a152_wav_audio_wav_1_16000_2",
       "command": [
         "bun",
         "run",
@@ -3025,11 +3221,11 @@
         "16000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a144_wav_audio_wav_1_16000_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a152_wav_audio_wav_1_16000_2.wav"
       ]
     },
     {
-      "id": "a145_mp3_audio_wav_1_16000_2",
+      "id": "a153_mp3_audio_wav_1_16000_2",
       "command": [
         "bun",
         "run",
@@ -3048,11 +3244,11 @@
         "16000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a145_mp3_audio_wav_1_16000_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a153_mp3_audio_wav_1_16000_2.mp3"
       ]
     },
     {
-      "id": "a146_wav_audio_wav_1_44100_1",
+      "id": "a154_wav_audio_wav_1_44100_1",
       "command": [
         "bun",
         "run",
@@ -3069,11 +3265,11 @@
         "44100",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a146_wav_audio_wav_1_44100_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a154_wav_audio_wav_1_44100_1.wav"
       ]
     },
     {
-      "id": "a147_mp3_audio_wav_1_44100_1",
+      "id": "a155_mp3_audio_wav_1_44100_1",
       "command": [
         "bun",
         "run",
@@ -3092,11 +3288,11 @@
         "44100",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a147_mp3_audio_wav_1_44100_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a155_mp3_audio_wav_1_44100_1.mp3"
       ]
     },
     {
-      "id": "a148_wav_audio_wav_1_44100_2",
+      "id": "a156_wav_audio_wav_1_44100_2",
       "command": [
         "bun",
         "run",
@@ -3113,11 +3309,11 @@
         "44100",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a148_wav_audio_wav_1_44100_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a156_wav_audio_wav_1_44100_2.wav"
       ]
     },
     {
-      "id": "a149_mp3_audio_wav_1_44100_2",
+      "id": "a157_mp3_audio_wav_1_44100_2",
       "command": [
         "bun",
         "run",
@@ -3136,11 +3332,11 @@
         "44100",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a149_mp3_audio_wav_1_44100_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a157_mp3_audio_wav_1_44100_2.mp3"
       ]
     },
     {
-      "id": "a150_wav_audio_wav_1.5_8000_1",
+      "id": "a158_wav_audio_wav_1.5_8000_1",
       "command": [
         "bun",
         "run",
@@ -3157,55 +3353,11 @@
         "8000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a150_wav_audio_wav_1.5_8000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a158_wav_audio_wav_1.5_8000_1.wav"
       ]
     },
     {
-      "id": "a151_mp3_audio_wav_1.5_8000_1",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
-        "-t",
-        "1.5",
-        "-vn",
-        "-acodec",
-        "libmp3lame",
-        "-q:a",
-        "6",
-        "-ar",
-        "8000",
-        "-ac",
-        "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a151_mp3_audio_wav_1.5_8000_1.mp3"
-      ]
-    },
-    {
-      "id": "a152_wav_audio_wav_1.5_8000_2",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
-        "-t",
-        "1.5",
-        "-vn",
-        "-acodec",
-        "pcm_s16le",
-        "-ar",
-        "8000",
-        "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a152_wav_audio_wav_1.5_8000_2.wav"
-      ]
-    },
-    {
-      "id": "a153_mp3_audio_wav_1.5_8000_2",
+      "id": "a159_mp3_audio_wav_1.5_8000_1",
       "command": [
         "bun",
         "run",
@@ -3223,12 +3375,56 @@
         "-ar",
         "8000",
         "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a153_mp3_audio_wav_1.5_8000_2.mp3"
+        "1",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a159_mp3_audio_wav_1.5_8000_1.mp3"
       ]
     },
     {
-      "id": "a154_wav_audio_wav_1.5_16000_1",
+      "id": "a160_wav_audio_wav_1.5_8000_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
+        "-t",
+        "1.5",
+        "-vn",
+        "-acodec",
+        "pcm_s16le",
+        "-ar",
+        "8000",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a160_wav_audio_wav_1.5_8000_2.wav"
+      ]
+    },
+    {
+      "id": "a161_mp3_audio_wav_1.5_8000_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.wav",
+        "-t",
+        "1.5",
+        "-vn",
+        "-acodec",
+        "libmp3lame",
+        "-q:a",
+        "6",
+        "-ar",
+        "8000",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a161_mp3_audio_wav_1.5_8000_2.mp3"
+      ]
+    },
+    {
+      "id": "a162_wav_audio_wav_1.5_16000_1",
       "command": [
         "bun",
         "run",
@@ -3245,11 +3441,11 @@
         "16000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a154_wav_audio_wav_1.5_16000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a162_wav_audio_wav_1.5_16000_1.wav"
       ]
     },
     {
-      "id": "a155_mp3_audio_wav_1.5_16000_1",
+      "id": "a163_mp3_audio_wav_1.5_16000_1",
       "command": [
         "bun",
         "run",
@@ -3268,11 +3464,11 @@
         "16000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a155_mp3_audio_wav_1.5_16000_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a163_mp3_audio_wav_1.5_16000_1.mp3"
       ]
     },
     {
-      "id": "a156_wav_audio_wav_1.5_16000_2",
+      "id": "a164_wav_audio_wav_1.5_16000_2",
       "command": [
         "bun",
         "run",
@@ -3289,11 +3485,11 @@
         "16000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a156_wav_audio_wav_1.5_16000_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a164_wav_audio_wav_1.5_16000_2.wav"
       ]
     },
     {
-      "id": "a157_mp3_audio_wav_1.5_16000_2",
+      "id": "a165_mp3_audio_wav_1.5_16000_2",
       "command": [
         "bun",
         "run",
@@ -3312,11 +3508,11 @@
         "16000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a157_mp3_audio_wav_1.5_16000_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a165_mp3_audio_wav_1.5_16000_2.mp3"
       ]
     },
     {
-      "id": "a158_wav_audio_wav_1.5_44100_1",
+      "id": "a166_wav_audio_wav_1.5_44100_1",
       "command": [
         "bun",
         "run",
@@ -3333,11 +3529,11 @@
         "44100",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a158_wav_audio_wav_1.5_44100_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a166_wav_audio_wav_1.5_44100_1.wav"
       ]
     },
     {
-      "id": "a159_mp3_audio_wav_1.5_44100_1",
+      "id": "a167_mp3_audio_wav_1.5_44100_1",
       "command": [
         "bun",
         "run",
@@ -3356,11 +3552,11 @@
         "44100",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a159_mp3_audio_wav_1.5_44100_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a167_mp3_audio_wav_1.5_44100_1.mp3"
       ]
     },
     {
-      "id": "a160_wav_audio_wav_1.5_44100_2",
+      "id": "a168_wav_audio_wav_1.5_44100_2",
       "command": [
         "bun",
         "run",
@@ -3377,11 +3573,11 @@
         "44100",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a160_wav_audio_wav_1.5_44100_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a168_wav_audio_wav_1.5_44100_2.wav"
       ]
     },
     {
-      "id": "a161_mp3_audio_wav_1.5_44100_2",
+      "id": "a169_mp3_audio_wav_1.5_44100_2",
       "command": [
         "bun",
         "run",
@@ -3400,11 +3596,11 @@
         "44100",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a161_mp3_audio_wav_1.5_44100_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a169_mp3_audio_wav_1.5_44100_2.mp3"
       ]
     },
     {
-      "id": "a162_wav_audio_mp3_0.25_8000_1",
+      "id": "a170_wav_audio_mp3_0.25_8000_1",
       "command": [
         "bun",
         "run",
@@ -3421,55 +3617,11 @@
         "8000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a162_wav_audio_mp3_0.25_8000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a170_wav_audio_mp3_0.25_8000_1.wav"
       ]
     },
     {
-      "id": "a163_mp3_audio_mp3_0.25_8000_1",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
-        "-t",
-        "0.25",
-        "-vn",
-        "-acodec",
-        "libmp3lame",
-        "-q:a",
-        "6",
-        "-ar",
-        "8000",
-        "-ac",
-        "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a163_mp3_audio_mp3_0.25_8000_1.mp3"
-      ]
-    },
-    {
-      "id": "a164_wav_audio_mp3_0.25_8000_2",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
-        "-t",
-        "0.25",
-        "-vn",
-        "-acodec",
-        "pcm_s16le",
-        "-ar",
-        "8000",
-        "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a164_wav_audio_mp3_0.25_8000_2.wav"
-      ]
-    },
-    {
-      "id": "a165_mp3_audio_mp3_0.25_8000_2",
+      "id": "a171_mp3_audio_mp3_0.25_8000_1",
       "command": [
         "bun",
         "run",
@@ -3487,12 +3639,56 @@
         "-ar",
         "8000",
         "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a165_mp3_audio_mp3_0.25_8000_2.mp3"
+        "1",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a171_mp3_audio_mp3_0.25_8000_1.mp3"
       ]
     },
     {
-      "id": "a166_wav_audio_mp3_0.25_16000_1",
+      "id": "a172_wav_audio_mp3_0.25_8000_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
+        "-t",
+        "0.25",
+        "-vn",
+        "-acodec",
+        "pcm_s16le",
+        "-ar",
+        "8000",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a172_wav_audio_mp3_0.25_8000_2.wav"
+      ]
+    },
+    {
+      "id": "a173_mp3_audio_mp3_0.25_8000_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
+        "-t",
+        "0.25",
+        "-vn",
+        "-acodec",
+        "libmp3lame",
+        "-q:a",
+        "6",
+        "-ar",
+        "8000",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a173_mp3_audio_mp3_0.25_8000_2.mp3"
+      ]
+    },
+    {
+      "id": "a174_wav_audio_mp3_0.25_16000_1",
       "command": [
         "bun",
         "run",
@@ -3509,11 +3705,11 @@
         "16000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a166_wav_audio_mp3_0.25_16000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a174_wav_audio_mp3_0.25_16000_1.wav"
       ]
     },
     {
-      "id": "a167_mp3_audio_mp3_0.25_16000_1",
+      "id": "a175_mp3_audio_mp3_0.25_16000_1",
       "command": [
         "bun",
         "run",
@@ -3532,11 +3728,11 @@
         "16000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a167_mp3_audio_mp3_0.25_16000_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a175_mp3_audio_mp3_0.25_16000_1.mp3"
       ]
     },
     {
-      "id": "a168_wav_audio_mp3_0.25_16000_2",
+      "id": "a176_wav_audio_mp3_0.25_16000_2",
       "command": [
         "bun",
         "run",
@@ -3553,11 +3749,11 @@
         "16000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a168_wav_audio_mp3_0.25_16000_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a176_wav_audio_mp3_0.25_16000_2.wav"
       ]
     },
     {
-      "id": "a169_mp3_audio_mp3_0.25_16000_2",
+      "id": "a177_mp3_audio_mp3_0.25_16000_2",
       "command": [
         "bun",
         "run",
@@ -3576,11 +3772,11 @@
         "16000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a169_mp3_audio_mp3_0.25_16000_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a177_mp3_audio_mp3_0.25_16000_2.mp3"
       ]
     },
     {
-      "id": "a170_wav_audio_mp3_0.25_44100_1",
+      "id": "a178_wav_audio_mp3_0.25_44100_1",
       "command": [
         "bun",
         "run",
@@ -3597,55 +3793,11 @@
         "44100",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a170_wav_audio_mp3_0.25_44100_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a178_wav_audio_mp3_0.25_44100_1.wav"
       ]
     },
     {
-      "id": "a171_mp3_audio_mp3_0.25_44100_1",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
-        "-t",
-        "0.25",
-        "-vn",
-        "-acodec",
-        "libmp3lame",
-        "-q:a",
-        "6",
-        "-ar",
-        "44100",
-        "-ac",
-        "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a171_mp3_audio_mp3_0.25_44100_1.mp3"
-      ]
-    },
-    {
-      "id": "a172_wav_audio_mp3_0.25_44100_2",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
-        "-t",
-        "0.25",
-        "-vn",
-        "-acodec",
-        "pcm_s16le",
-        "-ar",
-        "44100",
-        "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a172_wav_audio_mp3_0.25_44100_2.wav"
-      ]
-    },
-    {
-      "id": "a173_mp3_audio_mp3_0.25_44100_2",
+      "id": "a179_mp3_audio_mp3_0.25_44100_1",
       "command": [
         "bun",
         "run",
@@ -3663,12 +3815,56 @@
         "-ar",
         "44100",
         "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a173_mp3_audio_mp3_0.25_44100_2.mp3"
+        "1",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a179_mp3_audio_mp3_0.25_44100_1.mp3"
       ]
     },
     {
-      "id": "a174_wav_audio_mp3_0.5_8000_1",
+      "id": "a180_wav_audio_mp3_0.25_44100_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
+        "-t",
+        "0.25",
+        "-vn",
+        "-acodec",
+        "pcm_s16le",
+        "-ar",
+        "44100",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a180_wav_audio_mp3_0.25_44100_2.wav"
+      ]
+    },
+    {
+      "id": "a181_mp3_audio_mp3_0.25_44100_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
+        "-t",
+        "0.25",
+        "-vn",
+        "-acodec",
+        "libmp3lame",
+        "-q:a",
+        "6",
+        "-ar",
+        "44100",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a181_mp3_audio_mp3_0.25_44100_2.mp3"
+      ]
+    },
+    {
+      "id": "a182_wav_audio_mp3_0.5_8000_1",
       "command": [
         "bun",
         "run",
@@ -3685,11 +3881,11 @@
         "8000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a174_wav_audio_mp3_0.5_8000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a182_wav_audio_mp3_0.5_8000_1.wav"
       ]
     },
     {
-      "id": "a175_mp3_audio_mp3_0.5_8000_1",
+      "id": "a183_mp3_audio_mp3_0.5_8000_1",
       "command": [
         "bun",
         "run",
@@ -3708,11 +3904,11 @@
         "8000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a175_mp3_audio_mp3_0.5_8000_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a183_mp3_audio_mp3_0.5_8000_1.mp3"
       ]
     },
     {
-      "id": "a176_wav_audio_mp3_0.5_8000_2",
+      "id": "a184_wav_audio_mp3_0.5_8000_2",
       "command": [
         "bun",
         "run",
@@ -3729,11 +3925,11 @@
         "8000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a176_wav_audio_mp3_0.5_8000_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a184_wav_audio_mp3_0.5_8000_2.wav"
       ]
     },
     {
-      "id": "a177_mp3_audio_mp3_0.5_8000_2",
+      "id": "a185_mp3_audio_mp3_0.5_8000_2",
       "command": [
         "bun",
         "run",
@@ -3752,11 +3948,11 @@
         "8000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a177_mp3_audio_mp3_0.5_8000_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a185_mp3_audio_mp3_0.5_8000_2.mp3"
       ]
     },
     {
-      "id": "a178_wav_audio_mp3_0.5_16000_1",
+      "id": "a186_wav_audio_mp3_0.5_16000_1",
       "command": [
         "bun",
         "run",
@@ -3773,55 +3969,11 @@
         "16000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a178_wav_audio_mp3_0.5_16000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a186_wav_audio_mp3_0.5_16000_1.wav"
       ]
     },
     {
-      "id": "a179_mp3_audio_mp3_0.5_16000_1",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
-        "-t",
-        "0.5",
-        "-vn",
-        "-acodec",
-        "libmp3lame",
-        "-q:a",
-        "6",
-        "-ar",
-        "16000",
-        "-ac",
-        "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a179_mp3_audio_mp3_0.5_16000_1.mp3"
-      ]
-    },
-    {
-      "id": "a180_wav_audio_mp3_0.5_16000_2",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
-        "-t",
-        "0.5",
-        "-vn",
-        "-acodec",
-        "pcm_s16le",
-        "-ar",
-        "16000",
-        "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a180_wav_audio_mp3_0.5_16000_2.wav"
-      ]
-    },
-    {
-      "id": "a181_mp3_audio_mp3_0.5_16000_2",
+      "id": "a187_mp3_audio_mp3_0.5_16000_1",
       "command": [
         "bun",
         "run",
@@ -3839,12 +3991,56 @@
         "-ar",
         "16000",
         "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a181_mp3_audio_mp3_0.5_16000_2.mp3"
+        "1",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a187_mp3_audio_mp3_0.5_16000_1.mp3"
       ]
     },
     {
-      "id": "a182_wav_audio_mp3_0.5_44100_1",
+      "id": "a188_wav_audio_mp3_0.5_16000_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
+        "-t",
+        "0.5",
+        "-vn",
+        "-acodec",
+        "pcm_s16le",
+        "-ar",
+        "16000",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a188_wav_audio_mp3_0.5_16000_2.wav"
+      ]
+    },
+    {
+      "id": "a189_mp3_audio_mp3_0.5_16000_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
+        "-t",
+        "0.5",
+        "-vn",
+        "-acodec",
+        "libmp3lame",
+        "-q:a",
+        "6",
+        "-ar",
+        "16000",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a189_mp3_audio_mp3_0.5_16000_2.mp3"
+      ]
+    },
+    {
+      "id": "a190_wav_audio_mp3_0.5_44100_1",
       "command": [
         "bun",
         "run",
@@ -3861,11 +4057,11 @@
         "44100",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a182_wav_audio_mp3_0.5_44100_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a190_wav_audio_mp3_0.5_44100_1.wav"
       ]
     },
     {
-      "id": "a183_mp3_audio_mp3_0.5_44100_1",
+      "id": "a191_mp3_audio_mp3_0.5_44100_1",
       "command": [
         "bun",
         "run",
@@ -3884,11 +4080,11 @@
         "44100",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a183_mp3_audio_mp3_0.5_44100_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a191_mp3_audio_mp3_0.5_44100_1.mp3"
       ]
     },
     {
-      "id": "a184_wav_audio_mp3_0.5_44100_2",
+      "id": "a192_wav_audio_mp3_0.5_44100_2",
       "command": [
         "bun",
         "run",
@@ -3905,11 +4101,11 @@
         "44100",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a184_wav_audio_mp3_0.5_44100_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a192_wav_audio_mp3_0.5_44100_2.wav"
       ]
     },
     {
-      "id": "a185_mp3_audio_mp3_0.5_44100_2",
+      "id": "a193_mp3_audio_mp3_0.5_44100_2",
       "command": [
         "bun",
         "run",
@@ -3928,11 +4124,11 @@
         "44100",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a185_mp3_audio_mp3_0.5_44100_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a193_mp3_audio_mp3_0.5_44100_2.mp3"
       ]
     },
     {
-      "id": "a186_wav_audio_mp3_1_8000_1",
+      "id": "a194_wav_audio_mp3_1_8000_1",
       "command": [
         "bun",
         "run",
@@ -3949,55 +4145,11 @@
         "8000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a186_wav_audio_mp3_1_8000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a194_wav_audio_mp3_1_8000_1.wav"
       ]
     },
     {
-      "id": "a187_mp3_audio_mp3_1_8000_1",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
-        "-t",
-        "1",
-        "-vn",
-        "-acodec",
-        "libmp3lame",
-        "-q:a",
-        "6",
-        "-ar",
-        "8000",
-        "-ac",
-        "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a187_mp3_audio_mp3_1_8000_1.mp3"
-      ]
-    },
-    {
-      "id": "a188_wav_audio_mp3_1_8000_2",
-      "command": [
-        "bun",
-        "run",
-        "src/cli.ts",
-        "-y",
-        "-i",
-        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
-        "-t",
-        "1",
-        "-vn",
-        "-acodec",
-        "pcm_s16le",
-        "-ar",
-        "8000",
-        "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a188_wav_audio_mp3_1_8000_2.wav"
-      ]
-    },
-    {
-      "id": "a189_mp3_audio_mp3_1_8000_2",
+      "id": "a195_mp3_audio_mp3_1_8000_1",
       "command": [
         "bun",
         "run",
@@ -4015,12 +4167,56 @@
         "-ar",
         "8000",
         "-ac",
-        "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a189_mp3_audio_mp3_1_8000_2.mp3"
+        "1",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a195_mp3_audio_mp3_1_8000_1.mp3"
       ]
     },
     {
-      "id": "a190_wav_audio_mp3_1_16000_1",
+      "id": "a196_wav_audio_mp3_1_8000_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
+        "-t",
+        "1",
+        "-vn",
+        "-acodec",
+        "pcm_s16le",
+        "-ar",
+        "8000",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a196_wav_audio_mp3_1_8000_2.wav"
+      ]
+    },
+    {
+      "id": "a197_mp3_audio_mp3_1_8000_2",
+      "command": [
+        "bun",
+        "run",
+        "src/cli.ts",
+        "-y",
+        "-i",
+        "/Users/lou/gts/ffmpegb/scratch/stability/fixtures/audio.mp3",
+        "-t",
+        "1",
+        "-vn",
+        "-acodec",
+        "libmp3lame",
+        "-q:a",
+        "6",
+        "-ar",
+        "8000",
+        "-ac",
+        "2",
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a197_mp3_audio_mp3_1_8000_2.mp3"
+      ]
+    },
+    {
+      "id": "a198_wav_audio_mp3_1_16000_1",
       "command": [
         "bun",
         "run",
@@ -4037,11 +4233,11 @@
         "16000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a190_wav_audio_mp3_1_16000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a198_wav_audio_mp3_1_16000_1.wav"
       ]
     },
     {
-      "id": "a191_mp3_audio_mp3_1_16000_1",
+      "id": "a199_mp3_audio_mp3_1_16000_1",
       "command": [
         "bun",
         "run",
@@ -4060,11 +4256,11 @@
         "16000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a191_mp3_audio_mp3_1_16000_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a199_mp3_audio_mp3_1_16000_1.mp3"
       ]
     },
     {
-      "id": "a192_wav_audio_mp3_1_16000_2",
+      "id": "a200_wav_audio_mp3_1_16000_2",
       "command": [
         "bun",
         "run",
@@ -4081,11 +4277,11 @@
         "16000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a192_wav_audio_mp3_1_16000_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a200_wav_audio_mp3_1_16000_2.wav"
       ]
     },
     {
-      "id": "a193_mp3_audio_mp3_1_16000_2",
+      "id": "a201_mp3_audio_mp3_1_16000_2",
       "command": [
         "bun",
         "run",
@@ -4104,11 +4300,11 @@
         "16000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a193_mp3_audio_mp3_1_16000_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a201_mp3_audio_mp3_1_16000_2.mp3"
       ]
     },
     {
-      "id": "a194_wav_audio_mp3_1_44100_1",
+      "id": "a202_wav_audio_mp3_1_44100_1",
       "command": [
         "bun",
         "run",
@@ -4125,11 +4321,11 @@
         "44100",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a194_wav_audio_mp3_1_44100_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a202_wav_audio_mp3_1_44100_1.wav"
       ]
     },
     {
-      "id": "a195_mp3_audio_mp3_1_44100_1",
+      "id": "a203_mp3_audio_mp3_1_44100_1",
       "command": [
         "bun",
         "run",
@@ -4148,11 +4344,11 @@
         "44100",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a195_mp3_audio_mp3_1_44100_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a203_mp3_audio_mp3_1_44100_1.mp3"
       ]
     },
     {
-      "id": "a196_wav_audio_mp3_1_44100_2",
+      "id": "a204_wav_audio_mp3_1_44100_2",
       "command": [
         "bun",
         "run",
@@ -4169,11 +4365,11 @@
         "44100",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a196_wav_audio_mp3_1_44100_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a204_wav_audio_mp3_1_44100_2.wav"
       ]
     },
     {
-      "id": "a197_mp3_audio_mp3_1_44100_2",
+      "id": "a205_mp3_audio_mp3_1_44100_2",
       "command": [
         "bun",
         "run",
@@ -4192,11 +4388,11 @@
         "44100",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a197_mp3_audio_mp3_1_44100_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a205_mp3_audio_mp3_1_44100_2.mp3"
       ]
     },
     {
-      "id": "a198_wav_audio_mp3_1.5_8000_1",
+      "id": "a206_wav_audio_mp3_1.5_8000_1",
       "command": [
         "bun",
         "run",
@@ -4213,11 +4409,11 @@
         "8000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a198_wav_audio_mp3_1.5_8000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a206_wav_audio_mp3_1.5_8000_1.wav"
       ]
     },
     {
-      "id": "a199_mp3_audio_mp3_1.5_8000_1",
+      "id": "a207_mp3_audio_mp3_1.5_8000_1",
       "command": [
         "bun",
         "run",
@@ -4236,11 +4432,11 @@
         "8000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a199_mp3_audio_mp3_1.5_8000_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a207_mp3_audio_mp3_1.5_8000_1.mp3"
       ]
     },
     {
-      "id": "a200_wav_audio_mp3_1.5_8000_2",
+      "id": "a208_wav_audio_mp3_1.5_8000_2",
       "command": [
         "bun",
         "run",
@@ -4257,11 +4453,11 @@
         "8000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a200_wav_audio_mp3_1.5_8000_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a208_wav_audio_mp3_1.5_8000_2.wav"
       ]
     },
     {
-      "id": "a201_mp3_audio_mp3_1.5_8000_2",
+      "id": "a209_mp3_audio_mp3_1.5_8000_2",
       "command": [
         "bun",
         "run",
@@ -4280,11 +4476,11 @@
         "8000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a201_mp3_audio_mp3_1.5_8000_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a209_mp3_audio_mp3_1.5_8000_2.mp3"
       ]
     },
     {
-      "id": "a202_wav_audio_mp3_1.5_16000_1",
+      "id": "a210_wav_audio_mp3_1.5_16000_1",
       "command": [
         "bun",
         "run",
@@ -4301,11 +4497,11 @@
         "16000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a202_wav_audio_mp3_1.5_16000_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a210_wav_audio_mp3_1.5_16000_1.wav"
       ]
     },
     {
-      "id": "a203_mp3_audio_mp3_1.5_16000_1",
+      "id": "a211_mp3_audio_mp3_1.5_16000_1",
       "command": [
         "bun",
         "run",
@@ -4324,11 +4520,11 @@
         "16000",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a203_mp3_audio_mp3_1.5_16000_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a211_mp3_audio_mp3_1.5_16000_1.mp3"
       ]
     },
     {
-      "id": "a204_wav_audio_mp3_1.5_16000_2",
+      "id": "a212_wav_audio_mp3_1.5_16000_2",
       "command": [
         "bun",
         "run",
@@ -4345,11 +4541,11 @@
         "16000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a204_wav_audio_mp3_1.5_16000_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a212_wav_audio_mp3_1.5_16000_2.wav"
       ]
     },
     {
-      "id": "a205_mp3_audio_mp3_1.5_16000_2",
+      "id": "a213_mp3_audio_mp3_1.5_16000_2",
       "command": [
         "bun",
         "run",
@@ -4368,11 +4564,11 @@
         "16000",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a205_mp3_audio_mp3_1.5_16000_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a213_mp3_audio_mp3_1.5_16000_2.mp3"
       ]
     },
     {
-      "id": "a206_wav_audio_mp3_1.5_44100_1",
+      "id": "a214_wav_audio_mp3_1.5_44100_1",
       "command": [
         "bun",
         "run",
@@ -4389,11 +4585,11 @@
         "44100",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a206_wav_audio_mp3_1.5_44100_1.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a214_wav_audio_mp3_1.5_44100_1.wav"
       ]
     },
     {
-      "id": "a207_mp3_audio_mp3_1.5_44100_1",
+      "id": "a215_mp3_audio_mp3_1.5_44100_1",
       "command": [
         "bun",
         "run",
@@ -4412,11 +4608,11 @@
         "44100",
         "-ac",
         "1",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a207_mp3_audio_mp3_1.5_44100_1.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a215_mp3_audio_mp3_1.5_44100_1.mp3"
       ]
     },
     {
-      "id": "a208_wav_audio_mp3_1.5_44100_2",
+      "id": "a216_wav_audio_mp3_1.5_44100_2",
       "command": [
         "bun",
         "run",
@@ -4433,11 +4629,11 @@
         "44100",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a208_wav_audio_mp3_1.5_44100_2.wav"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a216_wav_audio_mp3_1.5_44100_2.wav"
       ]
     },
     {
-      "id": "a209_mp3_audio_mp3_1.5_44100_2",
+      "id": "a217_mp3_audio_mp3_1.5_44100_2",
       "command": [
         "bun",
         "run",
@@ -4456,7 +4652,7 @@
         "44100",
         "-ac",
         "2",
-        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a209_mp3_audio_mp3_1.5_44100_2.mp3"
+        "/Users/lou/gts/ffmpegb/scratch/stability/outputs/a217_mp3_audio_mp3_1.5_44100_2.mp3"
       ]
     }
   ]

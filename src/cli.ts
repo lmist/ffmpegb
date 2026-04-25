@@ -16,18 +16,21 @@ Usage:
 Commands:
   ffmpegb -i <input> <output>               Run ffmpeg-style commands directly
   ffmpegb duration <input>                  Print video duration in seconds
+  ffmpegb probe <input> [--json]            Print ffprobe-like metadata from ffmpeg logs
   ffmpegb audio <input>                     Extract audio to <input>.wav and <input>.mp3
   ffmpegb frames <input> [--count=N]        Extract frames as JPEGs to <input>_frames/
   ffmpegb run <input> -- <ffmpeg args>      Legacy arbitrary command wrapper
 
 Options:
   --count=N      Number of frames to extract (default: 100)
+  --json         Emit JSON for probe
   --help         Show this help message
 
 Examples:
   ffmpegb -i video.mp4 audio.wav
   ffmpegb -i video.mp4 -vf scale=320:240 output.mp4
   ffmpegb duration video.mp4
+  ffmpegb probe video.mp4 --json
   ffmpegb audio video.mp4
   ffmpegb frames video.mp4 --count=100
   ffmpegb run video.mp4 -- -vf scale=320:240 output.mp4
@@ -80,7 +83,7 @@ function parseArgs(argv: string[]) {
  */
 function extractDuration(logs: Array<{ type: string; message: string }>): number | null {
   const text = logs.map((l) => l.message).join("\n");
-  const match = text.match(/Duration:\s+(\d+):(\d+):(\d+\.\d+)/);
+  const match = text.match(/Duration:\s+(\d+):(\d+):(\d+(?:\.\d+)?)/);
   if (match) {
     const hours = parseFloat(match[1]);
     const minutes = parseFloat(match[2]);
@@ -90,14 +93,127 @@ function extractDuration(logs: Array<{ type: string; message: string }>): number
   return null;
 }
 
-const LEGACY_COMMANDS = new Set(["duration", "audio", "frames", "run"]);
+interface ProbeStream {
+  index: string;
+  type: "video" | "audio" | "subtitle" | "data" | "unknown";
+  codec?: string;
+  width?: number;
+  height?: number;
+  sampleRate?: number;
+  channels?: string;
+  fps?: number;
+  raw: string;
+}
+
+interface ProbeInfo {
+  duration: number | null;
+  start: number | null;
+  bitrate: string | null;
+  streams: ProbeStream[];
+}
+
+function parseProbeInfo(logs: Array<{ type: string; message: string }>): ProbeInfo {
+  const text = logs.map((l) => l.message).join("\n");
+  const durationMatch = text.match(/Duration:\s+(\d+):(\d+):(\d+(?:\.\d+)?),\s+start:\s+([^,]+),\s+bitrate:\s+([^\n]+)/);
+  const streams: ProbeStream[] = [];
+
+  for (const line of text.split("\n")) {
+    const streamMatch = line.match(/Stream #([^\s:]+:\d+)(?:\[[^\]]+\])?(?:\([^)]+\))?:\s+([^:]+):\s+(.+)/);
+    if (!streamMatch) continue;
+    const typeText = streamMatch[2]!.toLowerCase();
+    const rawDetails = streamMatch[3]!;
+    const stream: ProbeStream = {
+      index: streamMatch[1]!,
+      type: typeText.includes("video") ? "video" :
+        typeText.includes("audio") ? "audio" :
+        typeText.includes("subtitle") ? "subtitle" :
+        typeText.includes("data") ? "data" : "unknown",
+      codec: rawDetails.split(",")[0]?.trim(),
+      raw: line.trim(),
+    };
+
+    const sizeMatch = rawDetails.match(/,\s*(\d{2,5})x(\d{2,5})(?:\s|,|\[)/);
+    if (sizeMatch) {
+      stream.width = Number(sizeMatch[1]);
+      stream.height = Number(sizeMatch[2]);
+    }
+    const sampleMatch = rawDetails.match(/,\s*(\d+)\s+Hz,\s*([^,]+)/);
+    if (sampleMatch) {
+      stream.sampleRate = Number(sampleMatch[1]);
+      stream.channels = sampleMatch[2]!.trim();
+    }
+    const fpsMatch = rawDetails.match(/,\s*([0-9.]+)\s+fps(?:,|\s)/);
+    if (fpsMatch) stream.fps = Number(fpsMatch[1]);
+    streams.push(stream);
+  }
+
+  return {
+    duration: extractDuration(logs),
+    start: durationMatch ? Number(durationMatch[4]) : null,
+    bitrate: durationMatch ? durationMatch[5]!.trim() : null,
+    streams,
+  };
+}
+
+const LEGACY_COMMANDS = new Set(["duration", "probe", "audio", "frames", "run"]);
+const OPTIONS_WITH_REQUIRED_VALUES = new Set([
+  "-ac",
+  "-acodec",
+  "-af",
+  "-ar",
+  "-aspect",
+  "-b",
+  "-bufsize",
+  "-c",
+  "-codec",
+  "-crf",
+  "-filter",
+  "-filter:a",
+  "-filter:v",
+  "-filter_complex",
+  "-filter_complex_script",
+  "-f",
+  "-frames",
+  "-frames:a",
+  "-frames:v",
+  "-i",
+  "-itsoffset",
+  "-map",
+  "-map_chapters",
+  "-map_metadata",
+  "-metadata",
+  "-metadata:s:a",
+  "-metadata:s:v",
+  "-movflags",
+  "-pix_fmt",
+  "-preset",
+  "-profile",
+  "-profile:v",
+  "-q",
+  "-q:a",
+  "-q:v",
+  "-r",
+  "-s",
+  "-ss",
+  "-strict",
+  "-t",
+  "-threads",
+  "-to",
+  "-vf",
+  "-vframes",
+]);
 const OPTIONS_WITHOUT_VALUES = new Set([
   "-an",
+  "-benchmark",
+  "-copyts",
   "-dn",
+  "-genpts",
   "-hide_banner",
+  "-ignore_unknown",
   "-nostats",
   "-nostdin",
   "-n",
+  "-re",
   "-shortest",
   "-sn",
   "-stats",
@@ -130,8 +246,10 @@ function makeVirtualInputPath(localPath: string, index: number): string {
   return `${name}_${index}${ext}`;
 }
 
-function makeInputMountPoint(index: number): string {
-  return `/input_${index}`;
+let directCommandSequence = 0;
+
+function makeInputMountPoint(commandIndex: number, inputIndex: number): string {
+  return `/input_${commandIndex}_${inputIndex}`;
 }
 
 function makeVirtualOutputPath(localPath: string, index: number): string {
@@ -139,8 +257,8 @@ function makeVirtualOutputPath(localPath: string, index: number): string {
   return base;
 }
 
-function makeOutputMountPoint(index: number): string {
-  return `/output_${index}`;
+function makeOutputMountPoint(commandIndex: number, outputIndex: number): string {
+  return `/output_${commandIndex}_${outputIndex}`;
 }
 
 function shouldPrintLog(message: string): boolean {
@@ -161,7 +279,12 @@ function formatBytes(bytes: number): string {
 function optionTakesValue(arg: string): boolean {
   if (!arg.startsWith("-") || arg === "-") return false;
   if (arg.includes("=")) return false;
-  return !OPTIONS_WITHOUT_VALUES.has(arg);
+  if (OPTIONS_WITHOUT_VALUES.has(arg)) return false;
+  if (OPTIONS_WITH_REQUIRED_VALUES.has(arg)) return true;
+  if (/^-(?:b|c|codec|filter|frames|map|metadata|profile|q|qscale|tag):/.test(arg)) return true;
+  // FFmpeg has many long-tail options with values. Defaulting to value-taking
+  // avoids accidentally rewriting option values as output files.
+  return true;
 }
 
 function hasExplicitProcessingOptions(args: string[]): boolean {
@@ -192,6 +315,7 @@ function canAutoFastTranscode(rawArgs: string[], inputs: DirectCommandPlan["inpu
 
 async function planDirectCommand(rawArgs: string[]): Promise<DirectCommandPlan> {
   const args = [...rawArgs];
+  const commandIndex = ++directCommandSequence;
   const inputs: DirectCommandPlan["inputs"] = [];
   const outputs: DirectCommandPlan["outputs"] = [];
   let expectingOptionValue = false;
@@ -204,7 +328,7 @@ async function planDirectCommand(rawArgs: string[]): Promise<DirectCommandPlan> 
       if (inputPath && isLocalPathCandidate(inputPath) && await localFileExists(inputPath)) {
         const inputIndex = inputs.length + 1;
         const virtualName = makeVirtualInputPath(inputPath, inputIndex);
-        const mountPoint = makeInputMountPoint(inputIndex);
+        const mountPoint = makeInputMountPoint(commandIndex, inputIndex);
         const virtualPath = `${mountPoint}/${virtualName}`;
         inputs.push({ virtualPath, mountPoint, virtualName, localPath: inputPath });
         args[i + 1] = virtualPath;
@@ -228,7 +352,7 @@ async function planDirectCommand(rawArgs: string[]): Promise<DirectCommandPlan> 
 
     const outputIndex = outputs.length + 1;
     const virtualName = makeVirtualOutputPath(arg, outputIndex);
-    const mountPoint = makeOutputMountPoint(outputIndex);
+    const mountPoint = makeOutputMountPoint(commandIndex, outputIndex);
     const virtualPath = `${mountPoint}/${virtualName}`;
     outputs.push({
       virtualPath,
@@ -250,7 +374,7 @@ async function planDirectCommand(rawArgs: string[]): Promise<DirectCommandPlan> 
   return { args, inputs, outputs, autoFastTranscode };
 }
 
-async function runDirectCommand(client: FfmpegClient, rawArgs: string[]): Promise<void> {
+async function executeDirectCommand(client: FfmpegClient, rawArgs: string[]) {
   const plan = await planDirectCommand(rawArgs);
   if (plan.autoFastTranscode) {
     console.error("Using fast wasm MP4 transcode profile: mpeg4 q=5 + AAC 160k. Add codec/filter options to override.");
@@ -270,13 +394,21 @@ async function runDirectCommand(client: FfmpegClient, rawArgs: string[]): Promis
     await client.mountDirectory(output.mountPoint, output.localDir, true);
   }
 
-  const result = await client.exec(...plan.args);
+  return { plan, result: await client.exec(...plan.args) };
+}
+
+async function runDirectCommand(client: FfmpegClient, rawArgs: string[]): Promise<void> {
+  const { result } = await executeDirectCommand(client, rawArgs);
   result.logs.filter((l) => shouldPrintLog(l.message)).forEach((l) => {
     const write = l.type === "stderr" ? console.error : console.log;
     write(l.message);
   });
 
   process.exitCode = result.exitCode;
+}
+
+function replaceExtension(path: string, extension: string): string {
+  return /\.[^./]+$/.test(path) ? path.replace(/\.[^.]+$/, extension) : `${path}${extension}`;
 }
 
 /**
@@ -301,8 +433,7 @@ async function main() {
       await runDirectCommand(client, directArgs);
     } else if (command === "duration") {
       console.log(`Analyzing ${input}...`);
-      await client.writeFile("input", input!);
-      const result = await client.exec("-i", "input");
+      const { result } = await executeDirectCommand(client, ["-hide_banner", "-i", input!]);
       const duration = extractDuration(result.logs);
       if (duration !== null) {
         console.log(`Duration: ${duration} seconds`);
@@ -311,69 +442,81 @@ async function main() {
         result.logs.forEach((l) => console.error(l.message));
         process.exit(1);
       }
+    } else if (command === "probe") {
+      const { result } = await executeDirectCommand(client, ["-hide_banner", "-i", input!]);
+      const info = parseProbeInfo(result.logs);
+      if (flags.json) {
+        console.log(JSON.stringify(info, null, 2));
+      } else {
+        console.log(`Duration: ${info.duration ?? "unknown"} seconds`);
+        if (info.bitrate) console.log(`Bitrate: ${info.bitrate}`);
+        for (const stream of info.streams) {
+          const details = [
+            stream.codec,
+            stream.width && stream.height ? `${stream.width}x${stream.height}` : undefined,
+            stream.sampleRate ? `${stream.sampleRate} Hz` : undefined,
+            stream.channels,
+            stream.fps ? `${stream.fps} fps` : undefined,
+          ].filter(Boolean).join(", ");
+          console.log(`Stream ${stream.index}: ${stream.type}${details ? `, ${details}` : ""}`);
+        }
+      }
     } else if (command === "audio") {
       console.log(`Extracting audio from ${input}...`);
-      await client.writeFile("input", input!);
-
-      const wavOutput = input!.replace(/\.[^.]+$/, ".wav");
-      const mp3Output = input!.replace(/\.[^.]+$/, ".mp3");
+      const wavOutput = replaceExtension(input!, ".wav");
+      const mp3Output = replaceExtension(input!, ".mp3");
 
       console.log(`Extracting WAV -> ${wavOutput}`);
-      let result = await client.exec("-i", "input", "-vn", "-acodec", "pcm_s16le", "-ar", "44100", "-ac", "2", "output.wav");
+      let { result } = await executeDirectCommand(client, ["-y", "-i", input!, "-vn", "-acodec", "pcm_s16le", "-ar", "44100", "-ac", "2", wavOutput]);
       if (result.exitCode !== 0 && result.exitCode !== undefined) {
         console.warn("WAV extraction had non-zero exit code, but may still have produced output.");
       }
-      await client.readFile("output.wav", wavOutput);
       console.log(`Wrote ${wavOutput}`);
 
-      await client.deleteFile("output.wav");
-
       console.log(`Extracting MP3 -> ${mp3Output}`);
-      result = await client.exec("-i", "input", "-vn", "-acodec", "libmp3lame", "-q:a", "2", "output.mp3");
+      ({ result } = await executeDirectCommand(client, ["-y", "-i", input!, "-vn", "-acodec", "libmp3lame", "-q:a", "2", mp3Output]));
       if (result.exitCode !== 0 && result.exitCode !== undefined) {
         console.warn("MP3 extraction had non-zero exit code, but may still have produced output.");
       }
-      await client.readFile("output.mp3", mp3Output);
       console.log(`Wrote ${mp3Output}`);
     } else if (command === "frames") {
       const count = parseInt(String(flags.count ?? "10"), 10);
       console.log(`Extracting ${count} frames from ${input}...`);
-      await client.writeFile("input", input!);
 
-      const outputDir = input!.replace(/\.[^.]+$/, "_frames");
+      const outputDir = replaceExtension(input!, "_frames");
       await mkdir(outputDir, { recursive: true });
+      const pattern = resolve(outputDir, "frame_%03d.jpg");
 
-      // Extract frames (avoid complex filters to stay within WASM memory limits)
-      const result = await client.exec(
-        "-i", "input",
+      const { result } = await executeDirectCommand(client, [
+        "-y",
+        "-i", input!,
         "-an",
         "-frames:v", String(count),
-        "frame_%03d.jpg"
-      );
+        pattern,
+      ]);
+      if (result.exitCode !== 0 && result.exitCode !== undefined) {
+        console.warn("Frame extraction had non-zero exit code, but may still have produced output.");
+      }
 
-      const files = await client.listDir("/");
-      const frameFiles = files
-        .filter((f) => f.name.startsWith("frame_") && f.name.endsWith(".jpg"))
-        .map((f) => f.name)
-        .sort();
+      const frameFiles = Array.from(new Bun.Glob("frame_*.jpg").scanSync(outputDir)).sort();
 
       console.log(`Found ${frameFiles.length} frames.`);
-      for (const name of frameFiles) {
-        const localPath = `${outputDir}/${name}`;
-        await client.readFile(name, localPath);
-      }
       console.log(`Wrote ${frameFiles.length} frames to ${outputDir}/`);
     } else if (command === "run") {
       if (positional.length === 0) {
         console.error("Error: no ffmpeg arguments provided after --");
         process.exit(1);
       }
-      await client.writeFile("input", input!);
       const args = positional.map((a) => (a === "{input}" ? "input" : a));
-      console.log("Running: ffmpeg", args.join(" "));
-      const result = await client.exec(...args);
+      if (!args.includes("-i")) args.unshift("-i", input!);
+      for (let i = 0; i < args.length; i++) {
+        if (args[i] === "input") args[i] = input!;
+      }
+      console.log("Running: ffmpegb", args.join(" "));
+      const { result } = await executeDirectCommand(client, args);
       console.log("Exit code:", result.exitCode);
       result.logs.forEach((l) => console.log(l.message));
+      process.exitCode = result.exitCode;
     } else {
       console.error(`Unknown command: ${command}`);
       printUsage();

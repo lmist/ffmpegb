@@ -221,6 +221,14 @@ for (const input of frameVideos) {
   }
 }
 
+for (const input of ["source.mp4", "short.mkv"]) {
+  const inPath = resolve(fixtureDir, input);
+  addFileCase(cases, `v${++id}_complex_filter_map_${input.replace(/\W/g, "_")}`, ["-y", "-i", inPath, "-t", "0.5", "-filter_complex", "[0:v]scale=128:96[v]", "-map", "[v]", "-an", "-c:v", "mpeg4", "-q:v", "6", "-f", "mp4"], "mp4");
+  addFileCase(cases, `v${++id}_seek_map_format_${input.replace(/\W/g, "_")}`, ["-y", "-ss", "0.25", "-i", inPath, "-t", "0.5", "-map", "0:v:0", "-an", "-c:v", "mpeg4", "-q:v", "5", "-pix_fmt", "yuv420p", "-f", "mp4"], "mp4");
+  addFileCase(cases, `v${++id}_mapped_audio_wav_${input.replace(/\W/g, "_")}`, ["-y", "-i", inPath, "-t", "0.5", "-map", "0:a:0", "-vn", "-acodec", "pcm_s16le", "-ar", "22050", "-ac", "1"], "wav");
+  addFileCase(cases, `v${++id}_metadata_mp4_${input.replace(/\W/g, "_")}`, ["-y", "-i", inPath, "-t", "0.5", "-an", "-metadata", "title=ffmpegb stability", "-c:v", "mpeg4", "-q:v", "6", "-pix_fmt", "yuv420p"], "mp4");
+}
+
 for (const input of ["audio.wav", "audio.mp3"]) {
   const inPath = resolve(fixtureDir, input);
   for (const duration of durations) {

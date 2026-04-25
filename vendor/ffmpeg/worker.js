@@ -3,13 +3,14 @@
 /// <reference lib="webworker" />
 import { CORE_URL, FFMessageType } from "./const.js";
 import { ERROR_UNKNOWN_MESSAGE_TYPE, ERROR_NOT_LOADED, ERROR_IMPORT_FAILURE, } from "./errors.js";
-import { closeSync, existsSync, mkdirSync, openSync, readSync, statSync, unlinkSync, writeSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readlinkSync, readSync, renameSync, rmdirSync, statSync, symlinkSync, unlinkSync, writeSync } from "node:fs";
 import { dirname, join } from "node:path";
 let ffmpeg;
 const installBunFS = (core) => {
     if (core.FS.filesystems.BUNFS)
         return;
     const FS = core.FS;
+    const isDirMode = (mode) => (mode & 61440) === 16384;
     const BUNFS = {
         DIR_MODE: 16895,
         FILE_MODE: 33279,
@@ -110,13 +111,27 @@ const installBunFS = (core) => {
                     throw new FS.ErrnoError(63);
                 const path = join(parent.hostPath, name);
                 mkdirSync(dirname(path), { recursive: true });
+                if (isDirMode(mode))
+                    mkdirSync(path, { recursive: true });
                 return BUNFS.createNode(parent, name, mode, dev, {
                     path,
                     size: 0,
                     write: true,
                 });
             },
-            rename() { throw new FS.ErrnoError(63); },
+            rename(oldNode, newDir, newName) {
+                if (!oldNode.write || !newDir.write || !oldNode.hostPath || !newDir.hostPath)
+                    throw new FS.ErrnoError(63);
+                const newPath = join(newDir.hostPath, newName);
+                mkdirSync(dirname(newPath), { recursive: true });
+                renameSync(oldNode.hostPath, newPath);
+                if (oldNode.parent?.contents)
+                    delete oldNode.parent.contents[oldNode.name];
+                oldNode.name = newName;
+                oldNode.parent = newDir;
+                oldNode.hostPath = newPath;
+                newDir.contents[newName] = oldNode;
+            },
             unlink(parent, name) {
                 if (!parent.write || !parent.hostPath)
                     throw new FS.ErrnoError(63);
@@ -126,11 +141,40 @@ const installBunFS = (core) => {
                     unlinkSync(path);
                 delete parent.contents[name];
             },
-            rmdir() { throw new FS.ErrnoError(63); },
-            readdir(node) {
-                return [".", "..", ...Object.keys(node.contents)];
+            rmdir(parent, name) {
+                if (!parent.write || !parent.hostPath)
+                    throw new FS.ErrnoError(63);
+                const node = parent.contents[name];
+                const path = node?.hostPath || join(parent.hostPath, name);
+                if (existsSync(path))
+                    rmdirSync(path);
+                delete parent.contents[name];
             },
-            symlink() { throw new FS.ErrnoError(63); },
+            readdir(node) {
+                const names = new Set(Object.keys(node.contents));
+                if (node.hostPath && existsSync(node.hostPath)) {
+                    for (const name of readdirSync(node.hostPath))
+                        names.add(name);
+                }
+                return [".", "..", ...names];
+            },
+            symlink(parent, newName, oldPath) {
+                if (!parent.write || !parent.hostPath)
+                    throw new FS.ErrnoError(63);
+                const path = join(parent.hostPath, newName);
+                mkdirSync(dirname(path), { recursive: true });
+                symlinkSync(oldPath, path);
+                return BUNFS.createNode(parent, newName, BUNFS.FILE_MODE, 0, {
+                    path,
+                    size: 0,
+                    write: parent.write,
+                });
+            },
+            readlink(node) {
+                if (!node.hostPath)
+                    throw new FS.ErrnoError(44);
+                return readlinkSync(node.hostPath);
+            },
         },
         stream_ops: {
             open(stream) {

@@ -52,7 +52,7 @@ export class FfmpegClient {
       resolve(coreDir, "ffmpeg-core.worker.js")
     );
 
-    console.log("Loading ffmpeg.wasm core (~31 MB)...");
+    console.error("Loading ffmpeg.wasm core (~31 MB)...");
     await this.ffmpeg.load({
       classWorkerURL: workerURL,
       coreURL,
@@ -60,7 +60,7 @@ export class FfmpegClient {
       ...(coreWorkerPath ? { workerURL: pathToFileURL(coreWorkerPath).href } : {}),
     });
     this.loaded = true;
-    console.log("ffmpeg.wasm core loaded.");
+    console.error("ffmpeg.wasm core loaded.");
   }
 
   /**
@@ -160,11 +160,35 @@ export class FfmpegClient {
   }
 
   /**
+   * Creates a directory in ffmpeg.wasm's virtual filesystem.
+   */
+  async createDir(path: string): Promise<void> {
+    this.assertLoaded();
+    await this.ffmpeg.createDir(path);
+  }
+
+  /**
    * Deletes a file in ffmpeg.wasm's virtual filesystem.
    */
   async deleteFile(path: string): Promise<void> {
     this.assertLoaded();
     await this.ffmpeg.deleteFile(path);
+  }
+
+  /**
+   * Renames a virtual filesystem path.
+   */
+  async rename(oldPath: string, newPath: string): Promise<void> {
+    this.assertLoaded();
+    await this.ffmpeg.rename(oldPath, newPath);
+  }
+
+  /**
+   * Deletes a directory in ffmpeg.wasm's virtual filesystem.
+   */
+  async deleteDir(path: string): Promise<void> {
+    this.assertLoaded();
+    await this.ffmpeg.deleteDir(path);
   }
 
   /**
